@@ -1,10 +1,10 @@
 defmodule FreguesiaWeb.WhatsAppController do
   @moduledoc """
-  `GET /r/:slug`: registra a abertura e manda o freguês para o WhatsApp do lugar.
+  `GET /r/:slug`: records the opening and sends the customer to the place's WhatsApp.
 
-  O registro acontece antes do redirecionamento, então funciona sem JavaScript.
-  Quando o botão está escondido (denúncias) ou o lugar está pausado, não há abertura:
-  o freguês volta para a página do lugar com a explicação.
+  The record is written before the redirect, so it works without JavaScript.
+  When the button is hidden (complaints) or the place is paused, there is no opening:
+  the customer goes back to the place page with the explanation.
   """
   use FreguesiaWeb, :controller
 

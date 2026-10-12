@@ -1,7 +1,7 @@
 defmodule FreguesiaWeb.Components do
   @moduledoc """
-  Componentes do design da Freguesia (PRD §12). Ficam separados de `CoreComponents`,
-  que são o básico do Phoenix (formulários, botões, tabelas).
+  Freguesia design components (PRD §12). Kept separate from `CoreComponents`,
+  which are the Phoenix basics (forms, buttons, tables).
   """
   use Phoenix.Component
   use FreguesiaWeb, :verified_routes
@@ -12,12 +12,12 @@ defmodule FreguesiaWeb.Components do
   alias Freguesia.Reports.{Savings, Stats}
 
   @doc """
-  Card de um lugar na lista do bairro.
+  Card for a place in the neighborhood list.
 
-  Três estados (PRD §5):
-    * verificado: fundo da categoria, selo, etiqueta da oferta se houver
-    * não verificado: fundo `sand`, sem oferta, sem economia
-    * fechado: o status "Fechado · abre às…" aparece no lugar do "Aberto"
+  Three states (PRD §5):
+    * verified: category background, badge, offer tag if any
+    * unverified: `sand` background, no offer, no savings
+    * closed: the status "Fechado · abre às…" shows in place of "Aberto"
   """
   attr :place, :any, required: true
   attr :class, :any, default: nil
@@ -26,7 +26,7 @@ defmodule FreguesiaWeb.Components do
     place = assigns.place
     verified? = place.status == :verified
     colors = if verified?, do: category_colors(place), else: ColorMap.neutral()
-    # Regra 4 (PRD §4): no card só o resumo da oferta; sem resumo, nada aparece.
+    # Rule 4 (PRD §4): the card only shows the offer summary; without one, nothing is shown.
     offer = if verified?, do: Freguesia.Catalog.active_offer(place)
 
     assigns =
@@ -35,7 +35,7 @@ defmodule FreguesiaWeb.Components do
         colors: colors,
         offer: offer,
         funcionou_text: funcionou_chip(place),
-        economia_text: economia_chip(place)
+        economia_text: savings_chip(place)
       )
 
     ~H"""
@@ -78,8 +78,8 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Prova de que o pedido direto funciona: "Funcionou 31/33". Só aparece com ao menos
-  1 resposta em 30 dias (PRD §8).
+  Proof that ordering directly works: "Funcionou 31/33". Only shows with at least
+  1 answer in 30 days (PRD §8).
   """
   attr :text, :string, required: true
 
@@ -89,7 +89,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Selo Verificado. Único elemento em índigo (PRD §12)."
+  @doc "Verified badge. The only element in indigo (PRD §12)."
   def verified_badge(assigns) do
     ~H"""
     <span class="inline-flex flex-none items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-800">
@@ -99,7 +99,7 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Etiqueta inclinada com o resumo da oferta (regra 4: no card só o resumo).
+  Slanted tag with the offer summary (rule 4: only the summary on the card).
   """
   attr :text, :string, required: true
 
@@ -112,7 +112,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Estado de horário: aberto, fechado, pausado (PRD §8)."
+  @doc "Opening state: open, closed, paused (PRD §8)."
   attr :status, :any, required: true
 
   def hours_label(assigns) do
@@ -139,7 +139,7 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Folha inferior (retorno do WhatsApp, PRD §5). Sem fundo escuro: o foco fica nela.
+  Bottom sheet (WhatsApp return, PRD §5). No dark backdrop: focus stays on it.
   """
   attr :id, :string, required: true
   attr :title, :string, required: true
@@ -162,7 +162,7 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Histograma das cinco faixas de economia (PRD §8). A faixa da média fica destacada.
+  Histogram of the five savings bands (PRD §8). The average band is highlighted.
   """
   attr :hist, :map, required: true
   attr :avg, :any, required: true
@@ -214,7 +214,7 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  "Funcionou X/Y em 30 dias". Barra só com 5 ou mais respostas (PRD §8).
+  "Funcionou X/Y em 30 dias". Bar only shows with 5 or more answers (PRD §8).
   """
   attr :worked, :integer, required: true
   attr :responses, :integer, required: true
@@ -241,7 +241,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Aviso em caixa de atenção (cor saffron)."
+  @doc "Warning in an attention box (saffron color)."
   attr :class, :any, default: nil
   slot :inner_block, required: true
 
@@ -254,7 +254,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Estado vazio com uma ação opcional."
+  @doc "Empty state with an optional action."
   attr :title, :string, required: true
   attr :class, :any, default: nil
   slot :inner_block
@@ -270,7 +270,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Título em dois tempos (PRD §12): linha 1 itálico 300, linha 2 negrito 800."
+  @doc "Two-part title (PRD §12): line 1 italic 300, line 2 bold 800."
   attr :first, :string, required: true
   attr :second, :string, required: true
 
@@ -284,8 +284,8 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  QR code em SVG. O SVG vem de `EQRCode` a partir da URI do TOTP, nunca de entrada
-  do usuário, por isso é seguro inseri-lo sem escape.
+  QR code in SVG. The SVG comes from `EQRCode` based on the TOTP URI, never from user input,
+  so it is safe to insert it without escaping.
   """
   attr :svg, :string, required: true
 
@@ -297,8 +297,8 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Link para o WhatsApp com a mensagem padrão (PRD §11). O número vem em E.164
-  e o `wa.me` pede só os dígitos.
+  WhatsApp link with the default message (PRD §11). The number comes in E.164
+  and `wa.me` only takes the digits.
   """
   def whatsapp_url(place_name, whatsapp_e164) do
     digits = String.trim_leading(whatsapp_e164, "+")
@@ -313,7 +313,7 @@ defmodule FreguesiaWeb.Components do
     end
   end
 
-  defp economia_chip(place) do
+  defp savings_chip(place) do
     if is_list(place.stats) do
       stat = Stats.window(place, "90d")
       n = stat.savings_hist |> Map.values() |> Enum.sum()

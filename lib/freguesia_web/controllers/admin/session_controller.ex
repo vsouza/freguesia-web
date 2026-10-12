@@ -1,7 +1,7 @@
 defmodule FreguesiaWeb.Admin.SessionController do
   @moduledoc """
-  Login do backoffice em três passos: e-mail e senha, depois o código do app
-  (TOTP). No primeiro acesso, o operador cadastra o app antes de entrar.
+  Backoffice login in three steps: email and password, then the app code
+  (TOTP). On first access, the operator registers the app before signing in.
   """
   use FreguesiaWeb, :controller
 

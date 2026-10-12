@@ -1,7 +1,7 @@
 defmodule Freguesia.Events do
   @moduledoc """
-  Analytics próprio (tabela `events`, PRD §9 e §11). Nomes fixos: qualquer outro
-  nome é recusado, para o painel não se espalhar em variações.
+  In-house analytics (`events` table, PRD §9 and §11). Fixed names: any other
+  name is rejected, so the dashboard does not spread into variations.
   """
   alias Freguesia.Events.Event
   alias Freguesia.Repo
@@ -13,7 +13,7 @@ defmodule Freguesia.Events do
     ad_impression ad_click
   )
 
-  @doc "Grava um evento. Devolve `{:error, :unknown_event}` para nomes fora da lista."
+  @doc "Records an event. Returns `{:error, :unknown_event}` for names outside the list."
   def track(name, props \\ %{}, device_id \\ nil) do
     if name in @names do
       now = DateTime.utc_now() |> DateTime.truncate(:second)

@@ -1,13 +1,13 @@
-# Dados de desenvolvimento. Rodar de novo não duplica nada:
+# Development data. Running it again does not duplicate anything:
 #
 #     mix run priv/repo/seeds.exs
 #
-# - Cidade e 5 bairros do piloto (polígonos APROXIMADOS, só para dev)
-# - Segmentos e categorias
-# - 6 lugares fictícios verificados (nomes provisórios, trocar pelos do canvas)
-# - 1 pedido pendente, para a fila não começar vazia
-# - 1 operador admin de dev (2FA é cadastrado no primeiro login)
-# - Slots de anúncio, desligados
+# - City and the 5 pilot neighborhoods (APPROXIMATE polygons, dev only)
+# - Segments and categories
+# - 6 fictional verified places (placeholder names, replace with the canvas ones)
+# - 1 pending request, so the queue does not start empty
+# - 1 dev admin operator (2FA is set up on the first login)
+# - Ad slots, disabled
 
 import Ecto.Query
 
@@ -19,7 +19,7 @@ alias Freguesia.Verification.Request
 
 now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-# --- Cidade e bairros do piloto -------------------------------------------
+# --- City and pilot neighborhoods -------------------------------------------
 
 city =
   Repo.insert!(
@@ -30,7 +30,7 @@ city =
 
 city = Repo.get_by!(City, slug: city.slug)
 
-# Centro aproximado e um quadrado de ~600 m em volta. Não são os limites oficiais.
+# Approximate center and a ~600 m square around it. These are not the official boundaries.
 pilot_neighborhoods = [
   {"Savassi", "savassi", -43.9378, -19.9372},
   {"Lourdes", "lourdes", -43.9400, -19.9330},
@@ -57,7 +57,7 @@ end
 
 neighborhood = fn slug -> Repo.get_by!(Neighborhood, slug: slug) end
 
-# --- Segmentos e categorias -----------------------------------------------
+# --- Segments and categories -----------------------------------------------
 
 segments = [
   {"restaurants", "Restaurantes", "pessego"},
@@ -95,7 +95,7 @@ end
 
 category = fn key -> Repo.get_by!(Category, segment_id: restaurants.id, key: key) end
 
-# --- Lugares fictícios verificados ----------------------------------------
+# --- Fictional verified places ----------------------------------------
 
 weekday = fn open, close -> [[open, close]] end
 
@@ -109,7 +109,7 @@ week_hours = %{
   "sun" => weekday.(720, 1200)
 }
 
-# {nome, slug, categoria, bairro, WhatsApp E.164, oferta (texto, resumo ou nil), bairros atendidos}
+# {name, slug, category, neighborhood, WhatsApp E.164, offer (text, summary or nil), covered neighborhoods}
 fictional_places = [
   {"Pizzaria do Largo", "pizzaria-do-largo", "pizza", "savassi", "+5531900000001",
    {"10% de desconto no pedido direto", "10% off"}, ["savassi", "lourdes"]},
@@ -170,7 +170,7 @@ for {name, slug, cat_key, hood_slug, whatsapp, offer, coverage_slugs} <- fiction
   end
 end
 
-# --- Pedido pendente na fila ----------------------------------------------
+# --- Pending request in the queue ----------------------------------------------
 
 pending_slug = "padaria-do-bairro-dev"
 
@@ -201,7 +201,7 @@ unless Repo.get_by(Place, slug: pending_slug) do
   Repo.insert!(%Request{place_id: pending.id, status: :pending, checks: %{}})
 end
 
-# --- Operador de dev ------------------------------------------------------
+# --- Dev operator ------------------------------------------------------
 
 dev_email = "admin@freguesia.local"
 
@@ -214,14 +214,14 @@ unless Repo.get_by(Operator, email: dev_email) do
     })
 
   IO.puts("""
-  Operador de dev criado:
+  Dev operator created:
     e-mail: #{dev_email}
     senha:  senha-dev-freguesia-2026
-    O 2FA é cadastrado no primeiro login em /admin/entrar.
+    2FA is set up on the first login at /admin/entrar.
   """)
 end
 
-# --- Slots de anúncio (desligados) ----------------------------------------
+# --- Ad slots (disabled) ----------------------------------------
 
 now_naive = now
 
@@ -237,5 +237,5 @@ for key <- ~w(home_after_2 detail_before_about) do
 end
 
 IO.puts(
-  "Seeds OK: #{Repo.aggregate(Place, :count)} lugares, #{Repo.aggregate(Neighborhood, :count)} bairros."
+  "Seeds OK: #{Repo.aggregate(Place, :count)} places, #{Repo.aggregate(Neighborhood, :count)} neighborhoods."
 )

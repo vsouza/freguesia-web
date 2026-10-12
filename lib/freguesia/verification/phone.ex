@@ -1,9 +1,9 @@
 defmodule Freguesia.Verification.Phone do
   @moduledoc """
-  Normaliza um WhatsApp brasileiro para E.164 (`+55DDDNÚMERO`).
+  Normalizes a Brazilian WhatsApp number to E.164 (`+55DDDNUMBER`).
 
-  Aceita com ou sem máscara, com ou sem `+55`. Ambiguidade de DDD 55 resolve-se
-  pelo tamanho: 12 ou 13 dígitos com `55` na frente já trazem o país.
+  Accepts input with or without formatting, with or without `+55`. The DDD 55 ambiguity is resolved
+  by length: 12 or 13 digits with `55` in front already include the country code.
   """
 
   @e164 ~r/^\+55[1-9]\d{9,10}$/

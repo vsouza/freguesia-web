@@ -1,9 +1,9 @@
 defmodule Freguesia.Reports.Report do
   @moduledoc """
-  Resposta do freguês à pergunta "Conseguiu pedir direto?" (tabela `reports`).
+  Customer's answer to the question "Conseguiu pedir direto?" (`reports` table).
 
-  Uma por abertura. Relato inválido fica na tabela com `valid = false` e o motivo
-  em `invalid_reason`; nunca é apagado.
+  One per opening. An invalid report stays in the table with `valid = false` and the reason
+  in `invalid_reason`; it is never deleted.
   """
   use Freguesia.Schema
 

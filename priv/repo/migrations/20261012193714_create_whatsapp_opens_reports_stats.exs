@@ -38,7 +38,7 @@ defmodule Freguesia.Repo.Migrations.CreateWhatsappOpensReportsStats do
       timestamps(type: :utc_datetime)
     end
 
-    # Uma resposta por abertura.
+    # One answer per opening.
     create unique_index(:reports, [:open_id])
     create index(:reports, [:place_id, :answered_at])
     create index(:reports, [:device_id, :place_id, :answered_at])

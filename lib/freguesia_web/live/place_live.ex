@@ -1,11 +1,11 @@
 defmodule FreguesiaWeb.PlaceLive do
   @moduledoc """
-  Detalhes de um lugar (PRD §5): foto (placeholder da categoria), status, oferta
-  aprovada, provas de economia e o botão para pedir no WhatsApp.
+  Place details (PRD §5): photo (category placeholder), status, offer
+  approved, proof of savings and the button to order on WhatsApp.
 
-  O loop do WhatsApp mora aqui: o botão passa por `/r/:slug` (que registra a
-  abertura), e quando a aba volta ao foco, a folha de retorno pergunta se o pedido
-  funcionou. A máquina de estados da folha fica no servidor.
+  The WhatsApp loop lives here: the button goes through `/r/:slug` (which records the
+  opening), and when the tab regains focus, the return sheet asks whether the order
+  worked. The sheet state machine lives on the server.
   """
   use FreguesiaWeb, :live_view
 
@@ -59,13 +59,13 @@ defmodule FreguesiaWeb.PlaceLive do
     end
   end
 
-  ## Folha de retorno
+  ## Return sheet
 
   @impl true
   def handle_event("returned", _params, socket), do: {:noreply, open_pending_sheet(socket)}
 
   def handle_event("later", _params, socket) do
-    # "Responder depois": fecha, mas a abertura continua pendente até 2 h.
+    # "Answer later": closes it, but the opening stays pending for 2 h.
     {:noreply, assign(socket, sheet: nil)}
   end
 
@@ -88,7 +88,7 @@ defmodule FreguesiaWeb.PlaceLive do
     end
   end
 
-  # Abre a folha se houver abertura pendente de até 2 h e a folha ainda estiver fechada.
+  # Opens the sheet when there is a pending opening of up to 2 h and the sheet is closed.
   defp open_pending_sheet(%{assigns: %{sheet: nil}} = socket) do
     %{place: place, device_id: device_id} = socket.assigns
 
@@ -204,7 +204,7 @@ defmodule FreguesiaWeb.PlaceLive do
                 Número em revisão
               </span>
             <% @place.status == :verified and @place.hours_status != {:paused} -> %>
-              <%!-- Nova aba: a página continua aberta e a folha aparece quando a aba volta ao foco. --%>
+              <%!-- New tab: the page stays open and the sheet appears when the tab regains focus. --%>
               <a
                 href={~p"/r/#{@place.slug}"}
                 target="_blank"

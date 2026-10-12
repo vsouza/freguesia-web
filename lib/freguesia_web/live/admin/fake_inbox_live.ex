@@ -1,8 +1,8 @@
 defmodule FreguesiaWeb.Admin.FakeInboxLive do
   @moduledoc """
-  Caixa do WhatsApp fake (`/admin/mensagens-fake`). Mostra o que o adaptador
-  `Freguesia.Messaging.Fake` "enviou", incluindo o código de verificação.
-  Só existe com o adaptador fake ligado; em produção com a API real ela fica vazia.
+  Fake WhatsApp inbox (`/admin/mensagens-fake`). Shows what the adapter
+  `Freguesia.Messaging.Fake` "sent", including the verification code.
+  It only exists with the fake adapter enabled; in production with the real API it stays empty.
   """
   use FreguesiaWeb, :live_view
 

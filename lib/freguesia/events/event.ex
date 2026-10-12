@@ -1,5 +1,5 @@
 defmodule Freguesia.Events.Event do
-  @moduledoc "Linha da tabela `events`, particionada por mês."
+  @moduledoc "Row of the `events` table, partitioned by month."
   use Freguesia.Schema
 
   @primary_key {:id, UUIDv7, autogenerate: true}

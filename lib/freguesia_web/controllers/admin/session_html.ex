@@ -1,5 +1,5 @@
 defmodule FreguesiaWeb.Admin.SessionHTML do
-  @moduledoc "Páginas de login do backoffice."
+  @moduledoc "Backoffice login pages."
   use FreguesiaWeb, :html
 
   embed_templates "session_html/*"

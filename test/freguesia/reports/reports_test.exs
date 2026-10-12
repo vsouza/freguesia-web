@@ -25,23 +25,23 @@ defmodule Freguesia.ReportsTest do
     %{place: Fixtures.verified_place()}
   end
 
-  describe "abertura pendente" do
-    test "vale até 2 horas depois do clique", %{place: place} do
+  describe "pending opening" do
+    test "valid up to 2 hours after the click", %{place: place} do
       open = open!(place, at: DateTime.add(@now, -2 * 3600 + 1))
       assert Reports.pending_open(place.id, @device, @now).id == open.id
     end
 
-    test "some depois de 2 horas", %{place: place} do
+    test "disappears after 2 hours", %{place: place} do
       open!(place, at: DateTime.add(@now, -2 * 3600 - 1))
       assert Reports.pending_open(place.id, @device, @now) == nil
     end
 
-    test "é de um dispositivo só", %{place: place} do
+    test "belongs to a single device", %{place: place} do
       open!(place)
       assert Reports.pending_open(place.id, "22222222-2222-7222-8222-222222222222", @now) == nil
     end
 
-    test "some depois de respondida", %{place: place} do
+    test "disappears once answered", %{place: place} do
       open = open!(place)
       {:ok, _} = Reports.answer(open.id, %{outcome: :worked, band: "le10"}, ctx(), @now)
       assert Reports.pending_open(place.id, @device, @now) == nil
@@ -49,7 +49,7 @@ defmodule Freguesia.ReportsTest do
   end
 
   describe "answer/4" do
-    test "sim com faixa grava relato válido e marca a abertura", %{place: place} do
+    test "yes with a band records a valid report and marks the opening", %{place: place} do
       open = open!(place)
 
       assert {:ok, report} =
@@ -61,7 +61,7 @@ defmodule Freguesia.ReportsTest do
       assert Repo.get!(Open, open.id).responded_at == @now
     end
 
-    test "uma resposta por abertura", %{place: place} do
+    test "one answer per opening", %{place: place} do
       open = open!(place)
       {:ok, _} = Reports.answer(open.id, %{outcome: :worked, band: "none"}, ctx(), @now)
 
@@ -69,28 +69,28 @@ defmodule Freguesia.ReportsTest do
                Reports.answer(open.id, %{outcome: :failed, reason: :no_answer}, ctx(), @now)
     end
 
-    test "resposta depois de 2 horas é recusada", %{place: place} do
+    test "an answer after 2 hours is rejected", %{place: place} do
       open = open!(place, at: DateTime.add(@now, -2 * 3600 - 1))
 
       assert {:error, :expired} =
                Reports.answer(open.id, %{outcome: :worked, band: "none"}, ctx(), @now)
     end
 
-    test "faixa inválida é recusada", %{place: place} do
+    test "invalid band is rejected", %{place: place} do
       open = open!(place)
 
       assert {:error, :invalid_band} =
                Reports.answer(open.id, %{outcome: :worked, band: "gigante"}, ctx(), @now)
     end
 
-    test "motivo de falha inválido é recusado", %{place: place} do
+    test "invalid failure reason is rejected", %{place: place} do
       open = open!(place)
 
       assert {:error, :invalid_reason} =
                Reports.answer(open.id, %{outcome: :failed, reason: :qualquer}, ctx(), @now)
     end
 
-    test "não comparei é válido e não tem faixa de média", %{place: place} do
+    test "'not compared' is valid and has no savings band", %{place: place} do
       open = open!(place)
 
       assert {:ok, report} =
@@ -99,7 +99,7 @@ defmodule Freguesia.ReportsTest do
       assert report.savings_band == "not_compared"
     end
 
-    test "não funcionou grava o motivo", %{place: place} do
+    test "'did not work' records the reason", %{place: place} do
       open = open!(place)
 
       assert {:ok, report} =
@@ -111,8 +111,8 @@ defmodule Freguesia.ReportsTest do
     end
   end
 
-  describe "denúncia" do
-    test "número errado ou golpe conta como não e abre caso", %{place: place} do
+  describe "complaint" do
+    test "wrong number or scam counts as no and opens a case", %{place: place} do
       open = open!(place)
 
       assert {:ok, report} =
@@ -122,7 +122,7 @@ defmodule Freguesia.ReportsTest do
       assert Repo.aggregate(from(c in Complaint, where: c.place_id == ^place.id), :count) == 1
     end
 
-    test "duas denúncias em 7 dias escondem o WhatsApp", %{place: place} do
+    test "two complaints in 7 days hide the WhatsApp button", %{place: place} do
       refute Reports.whatsapp_hidden?(place.id, @now)
 
       for i <- 1..2 do
@@ -141,7 +141,7 @@ defmodule Freguesia.ReportsTest do
       assert Reports.whatsapp_hidden?(place.id, @now)
     end
 
-    test "denúncias antigas, de mais de 7 dias, não contam", %{place: place} do
+    test "complaints older than 7 days do not count", %{place: place} do
       Repo.insert!(%Complaint{
         place_id: place.id,
         source: :report,
@@ -163,7 +163,7 @@ defmodule Freguesia.ReportsTest do
       refute Reports.whatsapp_hidden?(place.id, @now)
     end
 
-    test "denúncia fechada pelo operador deixa de contar", %{place: place} do
+    test "complaint closed by the operator stops counting", %{place: place} do
       for _ <- 1..2 do
         Repo.insert!(%Complaint{
           place_id: place.id,
@@ -179,10 +179,11 @@ defmodule Freguesia.ReportsTest do
     end
   end
 
-  describe "antifraude" do
-    test "o 4º relato válido do mesmo dispositivo no mesmo lugar em 30 dias é inválido", %{
-      place: place
-    } do
+  describe "antifraud" do
+    test "the 4th valid report from the same device for the same place within 30 days is invalid",
+         %{
+           place: place
+         } do
       reports =
         for _ <- 1..4 do
           open = open!(place)
@@ -202,7 +203,9 @@ defmodule Freguesia.ReportsTest do
       assert List.last(reports).invalid_reason == "device_limit"
     end
 
-    test "lote de mais de 10 relatos do mesmo /24 em 1 hora fica em revisão", %{place: place} do
+    test "a batch of more than 10 reports from the same /24 in 1 hour goes to review", %{
+      place: place
+    } do
       reports =
         for i <- 1..11 do
           device =
@@ -228,7 +231,7 @@ defmodule Freguesia.ReportsTest do
       assert batch.invalid_reason == "batch_review"
     end
 
-    test "relatos de /24 diferentes não formam lote" do
+    test "reports from different /24 networks do not form a batch" do
       assert Antifraud.ip24_hash_from_text("10.1.2.3") ==
                Antifraud.ip24_hash_from_text("10.1.2.200")
 
@@ -236,12 +239,12 @@ defmodule Freguesia.ReportsTest do
                Antifraud.ip24_hash_from_text("10.1.3.3")
     end
 
-    test "IPv6 não gera hash de /24" do
+    test "IPv6 does not produce a /24 hash" do
       assert Antifraud.ip24_hash_from_text("::1") == nil
       assert Antifraud.ip24_hash_from_text(nil) == nil
     end
 
-    test "purga apaga o hash de relatos com mais de 30 dias", %{place: place} do
+    test "purge deletes the hash of reports older than 30 days", %{place: place} do
       old = open!(place, at: DateTime.add(@now, -31 * 86_400))
 
       {:ok, _} =

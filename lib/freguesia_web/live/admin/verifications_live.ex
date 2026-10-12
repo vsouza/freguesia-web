@@ -1,5 +1,5 @@
 defmodule FreguesiaWeb.Admin.VerificationsLive do
-  @moduledoc "Fila de verificações do backoffice (PRD §7)."
+  @moduledoc "Backoffice verification queue (PRD §7)."
   use FreguesiaWeb, :live_view
 
   alias Freguesia.Verification

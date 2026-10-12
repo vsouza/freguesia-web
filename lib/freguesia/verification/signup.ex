@@ -1,9 +1,9 @@
 defmodule Freguesia.Verification.Signup do
   @moduledoc """
-  Formulário do cadastro em 3 passos, passo 1 (PRD §6).
+  Signup form in 3 steps, step 1 (PRD §6).
 
-  Validações de formato ficam aqui. As que dependem do catálogo (bairro do piloto,
-  tipo de comida obrigatório para restaurante) ficam em `Freguesia.Verification`.
+  Format validations live here. Those that depend on the catalog (pilot neighborhood,
+  food type required for restaurants) live in `Freguesia.Verification`.
   """
   use Ecto.Schema
 

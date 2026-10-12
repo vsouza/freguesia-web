@@ -55,11 +55,11 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
-  # Usado nos links das mensagens (ex.: página do lugar após a aprovação).
+  # Used in message links (e.g. the place page after approval).
   config :freguesia, :public_url, "https://#{host}"
 
-  # Fase 0 (G1): staging usa o adaptador fake. A API real do WhatsApp
-  # (Freguesia.Messaging.Cloud) é da fase 1 e precisa ser ligada aqui antes de produção.
+  # Phase 0 (G1): staging uses the fake adapter. The real WhatsApp API
+  # (Freguesia.Messaging.Cloud) belongs to phase 1 and must be wired here before production.
 
   config :freguesia, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 

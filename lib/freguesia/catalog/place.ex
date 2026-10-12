@@ -1,9 +1,9 @@
 defmodule Freguesia.Catalog.Place do
   @moduledoc """
-  Um lugar do catálogo: restaurante, farmácia, mercado, construção ou pet.
+  A catalog place: restaurant, pharmacy, market, hardware store or pet shop.
 
-  O `status` nunca entra no `cast`: só o domínio de verificação muda o status,
-  sempre pela transição certa e com registro em `audit_log`.
+  `status` never goes into the `cast`: only the verification domain changes the status,
+  always through the right transition and with a record in `audit_log`.
   """
   use Freguesia.Schema
 
@@ -33,13 +33,13 @@ defmodule Freguesia.Catalog.Place do
     has_many :offers, Freguesia.Catalog.Offer
     has_many :stats, Freguesia.Reports.PlaceStat
 
-    # Calculado por requisição (PRD §8), nunca persistido.
+    # Computed per request (PRD §8), never persisted.
     field :hours_status, :any, virtual: true
 
     timestamps()
   end
 
-  @doc "Changeset de cadastro. Campos gerados pelo sistema ficam de fora."
+  @doc "Signup changeset. System-generated fields are left out."
   def registration_changeset(place, attrs) do
     place
     |> cast(attrs, [

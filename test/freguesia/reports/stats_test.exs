@@ -2,7 +2,7 @@ defmodule Freguesia.Reports.StatsTest do
   use Freguesia.DataCase, async: true
 
   alias Freguesia.{Fixtures, Reports}
-  alias Freguesia.Reports.{Savings, Stats}
+  alias Freguesia.Reports.Stats
 
   @now ~U[2026-10-12 15:00:00Z]
 
@@ -14,7 +14,7 @@ defmodule Freguesia.Reports.StatsTest do
 
   defp device(i), do: "6666666#{i}-6666-7666-8666-66666666666#{i}"
 
-  test "média simples dos pontos médios e histograma por faixa" do
+  test "simple average of the band midpoints and a histogram per band" do
     place = Fixtures.verified_place()
 
     answer!(place, device(1), %{outcome: :worked, band: "le10"})
@@ -29,7 +29,7 @@ defmodule Freguesia.Reports.StatsTest do
     assert stat.responses == 2
   end
 
-  test "não comparei conta como resposta, mas não entra na média nem no histograma" do
+  test "'not compared' counts as an answer but not in the average or the histogram" do
     place = Fixtures.verified_place()
 
     answer!(place, device(1), %{outcome: :worked, band: "not_compared"})
@@ -44,10 +44,10 @@ defmodule Freguesia.Reports.StatsTest do
     assert stat.savings_hist == %{}
   end
 
-  test "relatos inválidos não entram nos números de resposta" do
+  test "invalid reports do not count in the response numbers" do
     place = Fixtures.verified_place()
 
-    # O mesmo dispositivo responde 4 vezes: o 4º é inválido (limite de 3 por 30 dias)
+    # The same device answers 4 times: the 4th is invalid (limit of 3 per 30 days)
     for _ <- 1..4 do
       answer!(place, device(1), %{outcome: :worked, band: "le10"})
     end
@@ -60,7 +60,7 @@ defmodule Freguesia.Reports.StatsTest do
     assert stat.worked == 3
   end
 
-  test "janela de 30 dias deixa de fora relatos antigos, a de 90 não" do
+  test "the 30-day window excludes old reports, the 90-day one does not" do
     place = Fixtures.verified_place()
     old = DateTime.add(@now, -45 * 86_400)
     answer!(place, device(1), %{outcome: :worked, band: "le10"}, old)
@@ -72,7 +72,7 @@ defmodule Freguesia.Reports.StatsTest do
     assert stats["90d"].responses == 1
   end
 
-  test "lugar sem atividade tem zeros, sem linha no banco" do
+  test "a place without activity has zeros and no row in the database" do
     place = Fixtures.verified_place()
     stats = Stats.for_place(place.id)
 
@@ -81,7 +81,7 @@ defmodule Freguesia.Reports.StatsTest do
     assert stats["90d"].savings_avg == nil
   end
 
-  test "refresh é idempotente" do
+  test "refresh is idempotent" do
     place = Fixtures.verified_place()
     answer!(place, device(1), %{outcome: :worked, band: "le20"})
 

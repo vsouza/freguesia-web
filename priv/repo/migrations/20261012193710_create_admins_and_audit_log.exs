@@ -30,12 +30,12 @@ defmodule Freguesia.Repo.Migrations.CreateAdminsAndAuditLog do
 
     create index(:audit_log, [:entity, :entity_id])
 
-    # audit_log é imutável: nenhum UPDATE ou DELETE, nem por engano de código.
+    # audit_log is immutable: no UPDATE or DELETE, not even by a code mistake.
     execute(
       """
       CREATE OR REPLACE FUNCTION audit_log_immutable() RETURNS trigger
         LANGUAGE plpgsql
-        AS $$ BEGIN RAISE EXCEPTION 'audit_log é imutável'; END; $$
+        AS $$ BEGIN RAISE EXCEPTION 'audit_log is immutable'; END; $$
       """,
       "DROP FUNCTION IF EXISTS audit_log_immutable()"
     )

@@ -1,14 +1,14 @@
 defmodule Freguesia.Reports.Antifraud do
   @moduledoc """
-  Antifraude dos relatos (PRD §8 e §13).
+  Anti-fraud for reports (PRD §8 and §13).
 
-    * No máximo 3 relatos válidos por dispositivo por lugar em 30 dias. Os excedentes
-      ficam `valid = false` com motivo `device_limit`.
-    * Lote suspeito: mais de 10 relatos do mesmo /24 em 1 hora. O relato que passa
-      do limite fica `valid = false` com motivo `batch_review`, até o operador liberar.
+    * At most 3 valid reports per device per place in 30 days. The excess
+      are marked `valid = false` with reason `device_limit`.
+    * Suspicious batch: more than 10 reports from the same /24 within 1 hour. The report that goes over
+      the limit is marked `valid = false` with reason `batch_review`, until the operator releases it.
 
-    O /24 nunca é guardado em claro. Guarda-se um HMAC com chave que muda por dia, e o
-    hash é apagado depois de 30 dias (ver `Freguesia.Reports.purge_ip_hashes/1`).
+    The /24 is never stored in the clear. An HMAC with a key that changes daily is stored instead, and the
+    hash is deleted after 30 days (see `Freguesia.Reports.purge_ip_hashes/1`).
   """
   import Ecto.Query, warn: false
 
@@ -22,8 +22,8 @@ defmodule Freguesia.Reports.Antifraud do
   @batch_window_seconds 60 * 60
 
   @doc """
-  Motivo de invalidação para um relato novo, ou `nil` se ele é válido.
-  Consulta os relatos já gravados, antes do insert.
+  Invalidation reason for a new report, or `nil` if it is valid.
+  Queries the reports already stored, before the insert.
   """
   def invalid_reason(device_id, place_id, ip24_hash, now) do
     cond do
@@ -33,7 +33,7 @@ defmodule Freguesia.Reports.Antifraud do
     end
   end
 
-  @doc "Hash do /24 de um IP IPv4 (tupla ou string), com salt diário. `nil` sem IP."
+  @doc "Hash of the /24 of an IPv4 address (tuple or string), with a daily salt. `nil` without an IP."
   def ip24_hash(nil), do: nil
 
   def ip24_hash({a, b, c, _d}), do: ip24_hash("#{a}.#{b}.#{c}")
@@ -42,7 +42,7 @@ defmodule Freguesia.Reports.Antifraud do
     :crypto.mac(:hmac, :sha256, daily_key(Date.utc_today()), prefix)
   end
 
-  @doc "Extrai o /24 de um IP textual (`a.b.c.d`). Fora de IPv4, devolve `nil`."
+  @doc "Extracts the /24 from a textual IP (`a.b.c.d`). Outside IPv4, returns `nil`."
   def ip24_hash_from_text(text) when is_binary(text) do
     case String.split(text, ".") do
       [a, b, c, _d] -> ip24_hash("#{a}.#{b}.#{c}")

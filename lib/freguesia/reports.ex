@@ -1,15 +1,15 @@
 defmodule Freguesia.Reports do
   @moduledoc """
-  O loop do WhatsApp (PRD §5, "Retorno do WhatsApp", e §8).
+  The WhatsApp loop (PRD §5, "WhatsApp return", and §8).
 
-    1. `open_whatsapp/3` registra o clique em "Pedir no WhatsApp".
-    2. Quando a aba volta ao foco, `pending_open/3` diz se há uma pergunta para fazer
-       (abertura de até 2 h, sem resposta).
-    3. `answer/3` grava a resposta: "funcionou" com faixa de economia, ou "não
-       funcionou" com motivo. Denúncia "número errado ou golpe" também abre caso.
+    1. `open_whatsapp/3` records the click on "Pedir no WhatsApp".
+    2. When the tab regains focus, `pending_open/3` says whether there is a question to ask
+       (an opening up to 2 h old, with no answer).
+    3. `answer/3` records the answer: "funcionou" with a savings band, or "não
+       funcionou" with a reason. A complaint "número errado ou golpe" also opens a case.
 
-  Relatos inválidos (antifraude) ficam gravados com `valid = false`, mas não
-  entram nas estatísticas.
+  Invalid reports (anti-fraud) are stored with `valid = false`, but do not
+  count toward the stats.
   """
   import Ecto.Query, warn: false
 
@@ -22,7 +22,7 @@ defmodule Freguesia.Reports do
   @complaint_threshold 2
   @report_retention_days 30
 
-  @doc "Registra a abertura. Chamado antes de redirecionar para o `wa.me`."
+  @doc "Records the opening. Called before redirecting to `wa.me`."
   def open_whatsapp(place_id, device_id, now \\ now()) do
     %Open{}
     |> Changeset.change(%{place_id: place_id, device_id: device_id, opened_at: now})
@@ -30,8 +30,8 @@ defmodule Freguesia.Reports do
   end
 
   @doc """
-  Abertura pendente de resposta para este lugar e dispositivo: até 2 h depois
-  do clique, e ainda sem resposta. Vale a mais recente.
+  Opening awaiting an answer for this place and device: up to 2 h after
+  the click, and still unanswered. The most recent one counts.
   """
   def pending_open(place_id, device_id, now \\ now()) do
     since = DateTime.add(now, -@pending_window_seconds)
@@ -47,10 +47,10 @@ defmodule Freguesia.Reports do
   end
 
   @doc """
-  Grava a resposta de uma abertura.
+  Stores the answer to an opening.
 
-  `attrs` é `%{outcome: :worked, band: "le10"}` ou `%{outcome: :failed, reason: :no_answer}`.
-  `ctx` traz `device_id` e `ip24_hash`. Devolve `{:ok, report}` ou `{:error, motivo}`:
+  `attrs` is `%{outcome: :worked, band: "le10"}` or `%{outcome: :failed, reason: :no_answer}`.
+  `ctx` carries `device_id` and `ip24_hash`. Returns `{:ok, report}` or `{:error, reason}`:
   `:already_answered`, `:expired`, `:invalid_band`, `:invalid_reason`.
   """
   def answer(open_id, attrs, ctx, now \\ now()) do
@@ -117,7 +117,7 @@ defmodule Freguesia.Reports do
     DateTime.diff(now, opened_at) > @pending_window_seconds
   end
 
-  @doc "Abre um caso de denúncia no backoffice."
+  @doc "Opens a complaint case in the backoffice."
   def open_complaint(place_id, source, reason, details \\ nil) do
     %Complaint{}
     |> Changeset.change(%{place_id: place_id, source: source, reason: reason, details: details})
@@ -125,8 +125,8 @@ defmodule Freguesia.Reports do
   end
 
   @doc """
-  Esconde o botão de WhatsApp quando há 2 denúncias abertas em 7 dias.
-  Some sozinho quando o operador fecha os casos.
+  Hides the WhatsApp button when there are 2 open complaints within 7 days.
+  It goes away on its own when the operator closes the cases.
   """
   def whatsapp_hidden?(place_id, now \\ now()) do
     since = DateTime.add(now, -@complaint_window_days * 86_400)
@@ -144,7 +144,7 @@ defmodule Freguesia.Reports do
     count >= @complaint_threshold
   end
 
-  @doc "Apaga o hash do /24 de relatos com mais de 30 dias (PRD §13)."
+  @doc "Deletes the /24 hash of reports older than 30 days (PRD §13)."
   def purge_ip_hashes(now \\ now()) do
     cutoff = DateTime.add(now, -@report_retention_days * 86_400)
 

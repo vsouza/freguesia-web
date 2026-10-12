@@ -1,8 +1,8 @@
 defmodule Freguesia.Messaging.Fake do
   @moduledoc """
-  Adaptador de dev e teste. Guarda as mensagens numa tabela ETS para que a
-  caixa de entrada de dev (`/dev/mensagens`) e os testes possam ler o que
-  "saiu" para o WhatsApp.
+  Dev and test adapter. Keeps the messages in an ETS table so that the
+  dev inbox (`/dev/mensagens`) and the tests can read what
+  "went out" to WhatsApp.
   """
   @behaviour Freguesia.Messaging
 
@@ -34,14 +34,14 @@ defmodule Freguesia.Messaging.Fake do
     :ok
   end
 
-  @doc "Todas as mensagens, da mais antiga para a mais nova."
+  @doc "All messages, from oldest to newest."
   def all do
     @table |> :ets.tab2list() |> Enum.map(fn {_id, message} -> message end)
   end
 
-  @doc "Mensagens enviadas para um número (E.164)."
+  @doc "Messages sent to a number (E.164)."
   def sent_to(to), do: Enum.filter(all(), &(&1.to == to))
 
-  @doc "Apaga o histórico. Só para uso em dev."
+  @doc "Clears the history. For dev use only."
   def clear, do: :ets.delete_all_objects(@table)
 end

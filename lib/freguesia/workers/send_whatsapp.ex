@@ -1,8 +1,8 @@
 defmodule Freguesia.Workers.SendWhatsApp do
   @moduledoc """
-  Envio em fila de mensagens sem segredo (aprovação, pedido de ajuste).
+  Queued sending of messages without secrets (approval, adjustment request).
 
-  Retry exponencial: 30 s, 60 s, 120 s, 240 s, até 5 tentativas (PRD §11).
+  Exponential retry: 30 s, 60 s, 120 s, 240 s, up to 5 attempts (PRD §11).
   """
   use Oban.Worker, queue: :messaging, max_attempts: 5
 

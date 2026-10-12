@@ -1,9 +1,9 @@
 defmodule FreguesiaWeb.G1Test do
   @moduledoc """
-  Portão G1 da Fase 0 (PRD §16): cadastro → código (fake) → aprovação → card no ar.
+  G1 gate of Phase 0 (PRD §16): signup → code (fake) → approval → card live.
 
-  Roda ponta a ponta no servidor com LiveViewTest. O PRD pede Wallaby no navegador
-  real; isso fica para quando o chromedriver estiver no CI.
+  Runs end to end on the server with LiveViewTest. The PRD asks for Wallaby in the browser
+  real; that waits until chromedriver is in CI.
   """
   use FreguesiaWeb.ConnCase, async: true
 
@@ -12,12 +12,12 @@ defmodule FreguesiaWeb.G1Test do
   alias Freguesia.{Admin, Fixtures, Messaging.Fake, Repo}
   alias Freguesia.Admin.Operator
 
-  test "cadastro → código → aprovação → card aparece no bairro", %{conn: conn} do
+  test "signup → code → approval → card appears in the neighborhood", %{conn: conn} do
     Fixtures.restaurants()
     Fixtures.category()
     Fixtures.neighborhood()
 
-    # 1. Restaurante faz o cadastro e confirma o código
+    # 1. Restaurant signs up and confirms the code
     whatsapp = Fixtures.unique_whatsapp()
     e164 = "+55" <> String.replace(whatsapp, ~r/\D/, "")
 
@@ -34,11 +34,11 @@ defmodule FreguesiaWeb.G1Test do
     signup |> form("#code-form", code: %{code: code}) |> render_submit()
     assert has_element?(signup, "#signup-done")
 
-    # 2. Antes da aprovação, o lugar não aparece no catálogo
+    # 2. Before approval, the place does not appear in the catalog
     {:ok, _home, html} = live(build_conn(), ~p"/bairro/savassi")
     refute html =~ "Pizzaria G1"
 
-    # 3. Operador entra no backoffice e aprova
+    # 3. Operator logs into the backoffice and approves
     operator = Fixtures.operator()
     {:ok, operator, _} = Admin.start_totp_enrollment(operator)
 
@@ -63,30 +63,30 @@ defmodule FreguesiaWeb.G1Test do
     request = Repo.one!(from_request(e164))
     {:ok, detail, _} = live(admin, ~p"/admin/verificacoes/#{request.id}")
 
-    # Nome do perfil WhatsApp ainda não foi lido: a aprovação pede nota interna
+    # WhatsApp profile name not read yet: approval requires an internal note
     assert {:error, {:live_redirect, _}} =
              detail
              |> form("#approve-form", decision: %{note: "Nome conferido com o restaurante"})
              |> render_submit()
 
-    # 4. A mensagem de aprovação sai com o link da página
-    assert [approval] = Enum.filter(Fake.sent_to(e164), &(&1.template == "lugar_aprovado"))
+    # 4. The approval message goes out with the page link
+    assert [approval] = Enum.filter(Fake.sent_to(e164), &(&1.template == "place_approved"))
     assert approval.params["url"] =~ "/lugar/pizzaria-g1"
 
-    # 5. O card está no ar, com o selo Verificado
+    # 5. The card is live, with the Verified badge
     {:ok, home, _} = live(build_conn(), ~p"/bairro/savassi")
     assert has_element?(home, "#place-card-pizzaria-g1", "Pizzaria G1")
     assert has_element?(home, "#place-card-pizzaria-g1", "Verificado")
 
-    # 6. E a página de detalhes tem o botão de pedir no WhatsApp
+    # 6. And the details page has the order-on-WhatsApp button
     {:ok, place, _} = live(build_conn(), ~p"/lugar/pizzaria-g1")
     assert has_element?(place, "a#whatsapp-cta[href='/r/pizzaria-g1']")
 
-    # ...e o clique registra a abertura e leva ao wa.me do restaurante
+    # ...and the click records the opening and leads to the restaurant's wa.me link
     redirected = build_conn() |> get("/r/pizzaria-g1")
     assert redirected_to(redirected, 302) =~ "https://wa.me/" <> String.replace(e164, "+", "")
 
-    # O operador de teste ficou com 2FA confirmado
+    # The test operator ends up with confirmed 2FA
     assert Repo.get!(Operator, operator.id).totp_confirmed_at
   end
 

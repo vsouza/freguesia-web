@@ -1,9 +1,9 @@
 defmodule Freguesia.Reports.Stats do
   @moduledoc """
-  Materializa `place_stats` por janela de 30 e 90 dias (PRD §8 e §9).
+  Materializes `place_stats` per 30- and 90-day window (PRD §8 and §9).
 
-  Só relatos válidos entram nos números de resposta e de economia. "Não comparei"
-  conta como resposta, mas não entra na média nem no histograma.
+  Only valid reports count toward the answer and savings numbers. "Não comparei"
+  counts as an answer, but is not part of the average or the histogram.
   """
   import Ecto.Query, warn: false
 
@@ -12,7 +12,7 @@ defmodule Freguesia.Reports.Stats do
 
   @windows [{"30d", 30}, {"90d", 90}]
 
-  @doc "Recalcula as duas janelas para todos os lugares com atividade."
+  @doc "Recomputes both windows for all places with activity."
   def refresh(now \\ DateTime.utc_now()) do
     now = DateTime.truncate(now, :second)
 
@@ -81,7 +81,7 @@ defmodule Freguesia.Reports.Stats do
     |> Enum.group_by(& &1.place_id)
   end
 
-  # Média simples dos pontos médios (PRD §8). `nil` sem relatos.
+  # Simple average of the band midpoints (PRD §8). `nil` without reports.
   defp average([]), do: nil
 
   defp average(bands) do
@@ -89,7 +89,7 @@ defmodule Freguesia.Reports.Stats do
     Decimal.div(Decimal.new(total), Decimal.new(length(bands))) |> Decimal.round(2)
   end
 
-  # Contagem por faixa, só as cinco faixas de economia.
+  # Count per band, covering only the five savings bands.
   defp histogram(bands) do
     bands
     |> Enum.frequencies_by(& &1.savings_band)
@@ -97,13 +97,13 @@ defmodule Freguesia.Reports.Stats do
   end
 
   @doc """
-  Janela de um lugar com `stats` já carregado (home e card). Sem linha, zeros.
+  Window of a place with `stats` already loaded (home and card). No row means zeros.
   """
   def window(%{stats: stats, id: place_id}, window) when is_list(stats) do
     Enum.find(stats, &(&1.window == window)) || %PlaceStat{window: window, place_id: place_id}
   end
 
-  @doc ~s(Estatísticas de um lugar: `%{"30d" => %PlaceStat{}, "90d" => %PlaceStat{}}`, zeros quando não há linha.)
+  @doc ~s(Stats for a place: `%{"30d" => %PlaceStat{}, "90d" => %PlaceStat{}}`, zeros when there is no row.)
   def for_place(place_id) do
     rows =
       Repo.all(from s in PlaceStat, where: s.place_id == ^place_id)

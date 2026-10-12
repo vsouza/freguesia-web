@@ -1,6 +1,6 @@
 defmodule Freguesia.Reports.Open do
   @moduledoc """
-  Abertura de WhatsApp: cada clique em "Pedir no WhatsApp" (tabela `whatsapp_opens`).
+  WhatsApp opening: each click on "Pedir no WhatsApp" (`whatsapp_opens` table).
   Append-only: a resposta preenche `responded_at`, nunca apaga a linha.
   """
   use Freguesia.Schema

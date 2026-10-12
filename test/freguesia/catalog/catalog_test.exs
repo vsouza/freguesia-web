@@ -4,11 +4,11 @@ defmodule Freguesia.CatalogTest do
   alias Freguesia.{Catalog, Fixtures, Repo}
   alias Freguesia.Catalog.Place
 
-  # Segunda 12:00 em Brasília
+  # Monday 12:00 in Brasília
   @monday_noon ~U[2026-10-12 15:00:00Z]
 
   describe "list_home_places/2" do
-    test "mostra só verificados que atendem o bairro, abertos antes de fechados, depois pelo nome" do
+    test "shows only verified places serving the neighborhood, open before closed, then by name" do
       savassi = Fixtures.neighborhood()
       open_b = Fixtures.verified_place(%{name: "Bistrô B", neighborhood: savassi})
       open_a = Fixtures.verified_place(%{name: "Bistrô A", neighborhood: savassi})
@@ -37,7 +37,7 @@ defmodule Freguesia.CatalogTest do
       assert open_a && open_b && closed
     end
 
-    test "lugar que atende o bairro por cobertura aparece mesmo morando em outro" do
+    test "a place that serves the neighborhood by coverage appears even when located elsewhere" do
       savassi = Fixtures.neighborhood()
       lourdes = Fixtures.neighborhood(%{slug: "lourdes", name: "Lourdes"})
       place = Fixtures.verified_place(%{name: "Atende Lourdes", neighborhood: lourdes})
@@ -52,7 +52,7 @@ defmodule Freguesia.CatalogTest do
   end
 
   describe "get_place_by_slug/2" do
-    test "traz a oferta aprovada e o status de horário" do
+    test "includes the approved offer and the opening-hours status" do
       place = Fixtures.verified_place(%{name: "Com Oferta"})
 
       Repo.insert!(%Freguesia.Catalog.Offer{
@@ -68,12 +68,12 @@ defmodule Freguesia.CatalogTest do
       assert Catalog.active_offer(found).tag == "10% off"
     end
 
-    test "slug inexistente devolve nil" do
+    test "unknown slug returns nil" do
       assert Catalog.get_place_by_slug("nao-existe") == nil
     end
   end
 
-  test "bairro fora do piloto não é servido como bairro do catálogo" do
+  test "neighborhood outside the pilot is not served as a catalog neighborhood" do
     Fixtures.neighborhood(%{slug: "centro", name: "Centro", pilot: false})
     Fixtures.neighborhood()
 

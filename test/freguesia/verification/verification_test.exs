@@ -9,7 +9,7 @@ defmodule Freguesia.VerificationTest do
   alias Freguesia.Messaging.Fake
   alias Freguesia.Verification.{Code, Request}
 
-  # Cadastra um lugar e devolve {place, e164}. O código fica no Fake.
+  # Signs up a place and returns {place, e164}. The code stays in the Fake.
   defp signup!(overrides \\ %{}) do
     params = Fixtures.signup_params(overrides)
     {:ok, place, :sent} = Verification.submit_signup(params)
@@ -28,18 +28,18 @@ defmodule Freguesia.VerificationTest do
   defp templates_sent(e164), do: e164 |> Fake.sent_to() |> Enum.map(& &1.template)
 
   describe "submit_signup/1" do
-    test "cria o lugar em pending e manda o código pelo WhatsApp" do
+    test "creates the place as pending and sends the code over WhatsApp" do
       place = signup!(%{"offer_text" => "10% no pedido direto"})
 
       assert place.status == :pending
       assert place.whatsapp_e164 =~ ~r/^\+55319\d{8}$/
       assert place.terms_accepted_at
-      assert ["codigo_verificacao"] == templates_sent(place.whatsapp_e164)
+      assert ["verification_code"] == templates_sent(place.whatsapp_e164)
       assert [%{params: %{"code" => code}}] = Fake.sent_to(place.whatsapp_e164)
       assert String.match?(code, ~r/^\d{6}$/)
     end
 
-    test "o código nunca fica em texto puro no banco" do
+    test "the code is never stored in plain text in the database" do
       place = signup!()
       code = last_code(place.whatsapp_e164)
 
@@ -48,14 +48,14 @@ defmodule Freguesia.VerificationTest do
       refute String.contains?(inspect(stored), code)
     end
 
-    test "restaurante exige tipo de comida" do
+    test "restaurant requires a cuisine type" do
       params = Fixtures.signup_params(%{"category_id" => nil})
 
       assert {:error, changeset} = Verification.submit_signup(params)
       assert {"escolha o tipo de comida", _} = changeset.errors[:category_id]
     end
 
-    test "bairro fora do piloto é recusado" do
+    test "neighborhood outside the pilot is rejected" do
       outside = Fixtures.neighborhood(%{slug: "centro", name: "Centro", pilot: false})
 
       params =
@@ -65,14 +65,14 @@ defmodule Freguesia.VerificationTest do
       assert changeset.errors[:neighborhood_id]
     end
 
-    test "exige o aceite dos termos" do
+    test "requires acceptance of the terms" do
       assert {:error, changeset} =
                Verification.submit_signup(Fixtures.signup_params(%{"accept_terms" => "false"}))
 
       assert changeset.errors[:accept_terms]
     end
 
-    test "número já verificado não pode ser cadastrado de novo" do
+    test "an already verified number cannot be registered again" do
       verified = Fixtures.verified_place(%{whatsapp_e164: "+5531988887777"})
       assert verified.status == :verified
 
@@ -81,7 +81,7 @@ defmodule Freguesia.VerificationTest do
       assert changeset.errors[:whatsapp]
     end
 
-    test "número com cadastro pendente é reaproveitado, não duplicado" do
+    test "a number with a pending signup is reused, not duplicated" do
       first = signup!(%{"name" => "Primeiro Nome"})
       second = signup!(%{"name" => "Nome Corrigido", "whatsapp" => first.whatsapp_e164})
 
@@ -91,7 +91,7 @@ defmodule Freguesia.VerificationTest do
   end
 
   describe "confirm_code/2" do
-    test "código certo confirma e abre o pedido na fila" do
+    test "correct code confirms and opens the request in the queue" do
       place = signup!()
       request = confirm!(place)
 
@@ -99,13 +99,13 @@ defmodule Freguesia.VerificationTest do
       assert request.place_id == place.id
     end
 
-    test "código errado conta a tentativa e avisa quantas restam" do
+    test "wrong code counts as an attempt and reports how many remain" do
       place = signup!()
       assert {:error, {:invalid_code, 2}} = Verification.confirm_code(place.id, "000000")
       assert {:error, {:invalid_code, 1}} = Verification.confirm_code(place.id, "000000")
     end
 
-    test "três erros esgotam o código" do
+    test "three errors exhaust the code" do
       place = signup!()
       wrong = if last_code(place.whatsapp_e164) == "000000", do: "111111", else: "000000"
 
@@ -115,7 +115,7 @@ defmodule Freguesia.VerificationTest do
                Verification.confirm_code(place.id, last_code(place.whatsapp_e164))
     end
 
-    test "código expirado é recusado" do
+    test "expired code is rejected" do
       place = signup!()
       code = last_code(place.whatsapp_e164)
 
@@ -127,12 +127,12 @@ defmodule Freguesia.VerificationTest do
       assert {:error, :expired} = Verification.confirm_code(place.id, code)
     end
 
-    test "reenvio só depois de 60 segundos" do
+    test "resend only after 60 seconds" do
       place = signup!()
       assert {:error, :too_soon} = Verification.resend_code(place.id)
     end
 
-    test "reenvio depois de 60 segundos gera um código novo" do
+    test "resend after 60 seconds generates a new code" do
       place = signup!()
 
       Repo.update_all(
@@ -146,11 +146,11 @@ defmodule Freguesia.VerificationTest do
   end
 
   describe "approve/3" do
-    test "com as quatro checagens ok, publica sem nota" do
+    test "with all four checks passing, publishes without a note" do
       place = signup!()
       request = confirm!(place)
 
-      # Sem perfil do WhatsApp lido, a checagem de nome fica pending: precisa de nota.
+      # Without a WhatsApp profile read, the name check stays pending: a note is required.
       assert {:error, :checks_incomplete} = Verification.approve(request, nil)
 
       assert {:ok, approved} = Verification.approve(request, nil, "Perfil conferido à mão")
@@ -161,7 +161,7 @@ defmodule Freguesia.VerificationTest do
       assert place.verified_at
     end
 
-    test "nota interna libera a aprovação quando uma checagem está pendente" do
+    test "internal note allows approval while a check is pending" do
       place = signup!()
       request = confirm!(place)
 
@@ -171,7 +171,7 @@ defmodule Freguesia.VerificationTest do
       assert Repo.get!(Place, place.id).status == :verified
     end
 
-    test "grava audit_log e manda a mensagem de aprovação com o link" do
+    test "writes audit_log and sends the approval message with the link" do
       operator = Fixtures.operator()
       place = signup!()
       request = confirm!(place)
@@ -184,15 +184,15 @@ defmodule Freguesia.VerificationTest do
       assert entry.admin_id == operator.id
       assert entry.entity_id == place.id
 
-      assert "lugar_aprovado" in templates_sent(place.whatsapp_e164)
+      assert "place_approved" in templates_sent(place.whatsapp_e164)
 
       [message] =
-        Fake.sent_to(place.whatsapp_e164) |> Enum.filter(&(&1.template == "lugar_aprovado"))
+        Fake.sent_to(place.whatsapp_e164) |> Enum.filter(&(&1.template == "place_approved"))
 
       assert message.params["url"] =~ "/lugar/"
     end
 
-    test "aprovar de novo é idempotente: sem segunda mensagem nem segundo registro" do
+    test "approving again is idempotent: no second message or audit entry" do
       operator = Fixtures.operator()
       place = signup!()
       request = confirm!(place)
@@ -205,15 +205,15 @@ defmodule Freguesia.VerificationTest do
                :count
              ) == 1
 
-      assert Enum.count(Fake.sent_to(place.whatsapp_e164), &(&1.template == "lugar_aprovado")) ==
+      assert Enum.count(Fake.sent_to(place.whatsapp_e164), &(&1.template == "place_approved")) ==
                1
     end
 
-    test "nova oferta aprovada tira a anterior do ar sem apagar o histórico" do
+    test "a newly approved offer takes the previous one off the air without deleting history" do
       place = signup!(%{"offer_text" => "Oferta antiga"})
       {:ok, _} = Verification.approve(confirm!(place), nil, "ok")
 
-      # Edição do restaurante gera uma oferta nova pendente e um novo pedido
+      # A restaurant edit creates a new pending offer and a new request
       Repo.insert!(%Offer{place_id: place.id, text: "Oferta nova", status: :pending})
       {:ok, _request} = Repo.insert(%Request{place_id: place.id, status: :pending, checks: %{}})
 
@@ -231,8 +231,8 @@ defmodule Freguesia.VerificationTest do
     end
   end
 
-  describe "request_changes/3 e reject/3" do
-    test "pedir ajuste exige motivo e manda a mensagem com o motivo" do
+  describe "request_changes/3 and reject/3" do
+    test "requesting an adjustment requires a reason and sends the message with it" do
       place = signup!()
       request = confirm!(place)
 
@@ -245,21 +245,23 @@ defmodule Freguesia.VerificationTest do
       assert Repo.get!(Place, place.id).status == :needs_changes
 
       [message] =
-        Fake.sent_to(place.whatsapp_e164) |> Enum.filter(&(&1.template == "pedido_ajuste"))
+        Fake.sent_to(place.whatsapp_e164) |> Enum.filter(&(&1.template == "adjustment_request"))
 
       assert message.params["reason"] == "Envie a foto da fachada"
     end
 
-    test "pedir ajuste de novo é idempotente" do
+    test "requesting an adjustment again is idempotent" do
       place = signup!()
       request = confirm!(place)
 
       {:ok, _} = Verification.request_changes(request, nil, "Foto")
       assert {:ok, :already_requested} = Verification.request_changes(request, nil, "Foto")
-      assert Enum.count(Fake.sent_to(place.whatsapp_e164), &(&1.template == "pedido_ajuste")) == 1
+
+      assert Enum.count(Fake.sent_to(place.whatsapp_e164), &(&1.template == "adjustment_request")) ==
+               1
     end
 
-    test "recusar exige motivo e marca o lugar como rejected" do
+    test "rejecting requires a reason and marks the place as rejected" do
       place = signup!()
       request = confirm!(place)
 
@@ -268,7 +270,7 @@ defmodule Freguesia.VerificationTest do
       assert Repo.get!(Place, place.id).status == :rejected
     end
 
-    test "não se pode recusar um pedido já aprovado" do
+    test "an already approved request cannot be rejected" do
       place = signup!()
       request = confirm!(place)
       {:ok, _} = Verification.approve(request, nil, "ok")
@@ -277,7 +279,7 @@ defmodule Freguesia.VerificationTest do
       assert Repo.get!(Place, place.id).status == :verified
     end
 
-    test "número recusado só volta a tentar depois de 30 dias" do
+    test "a rejected number can only try again after 30 days" do
       place = signup!()
       request = confirm!(place)
       {:ok, _} = Verification.reject(request, nil, "Número errado")
@@ -289,8 +291,8 @@ defmodule Freguesia.VerificationTest do
     end
   end
 
-  describe "fila" do
-    test "list_requests filtra por status e traz o lugar com bairro e tipo" do
+  describe "queue" do
+    test "list_requests filters by status and preloads the place with its neighborhood and type" do
       place = signup!()
       _request = confirm!(place)
 
@@ -302,7 +304,7 @@ defmodule Freguesia.VerificationTest do
       assert Verification.list_requests(:approved) == []
     end
 
-    test "start_review é idempotente e move de pending para in_review" do
+    test "start_review is idempotent and moves pending to in_review" do
       operator = Fixtures.operator()
       place = signup!()
       request = confirm!(place)
@@ -315,8 +317,8 @@ defmodule Freguesia.VerificationTest do
     end
   end
 
-  describe "checagens" do
-    test "perfil do WhatsApp com nome parecido passa, nome diferente falha" do
+  describe "checks" do
+    test "WhatsApp profile with a similar name passes, a different name fails" do
       place = signup!(%{"name" => "Pizzaria do Zé"})
       request = confirm!(place)
 

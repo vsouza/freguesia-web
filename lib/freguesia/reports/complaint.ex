@@ -1,7 +1,7 @@
 defmodule Freguesia.Reports.Complaint do
   @moduledoc """
-  Denúncia de um lugar (tabela `complaints`). Duas denúncias em 7 dias escondem o
-  botão de WhatsApp até revisão do backoffice (PRD §4 e §7).
+  Complaint about a place (`complaints` table). Two complaints within 7 days hide the
+  WhatsApp button until the backoffice reviews it (PRD §4 and §7).
   """
   use Freguesia.Schema
 

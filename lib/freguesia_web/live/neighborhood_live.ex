@@ -1,6 +1,6 @@
 defmodule FreguesiaWeb.NeighborhoodLive do
   @moduledoc """
-  Home de um bairro do piloto: lugares verificados que atendem o bairro (PRD §5).
+  Home of a pilot neighborhood: verified places that serve the neighborhood (PRD §5).
   """
   use FreguesiaWeb, :live_view
 

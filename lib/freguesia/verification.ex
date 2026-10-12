@@ -1,15 +1,15 @@
 defmodule Freguesia.Verification do
   @moduledoc """
-  Cadastro, código do WhatsApp, checagens automáticas, fila e decisões (PRD §6 e §7).
+  Signup, WhatsApp code, automatic checks, queue and decisions (PRD §6 and §7).
 
-  Fluxo de um restaurante:
+  A restaurant's flow:
 
-    1. `submit_signup/1` cria (ou atualiza) o lugar em `pending` e envia um código.
-    2. `confirm_code/2` confere o código e abre o pedido na fila.
-    3. O operador decide com `approve/3`, `request_changes/3` ou `reject/3`.
+    1. `submit_signup/1` creates (or updates) the place in `pending` and sends a code.
+    2. `confirm_code/2` checks the code and opens the request in the queue.
+    3. The operator decides with `approve/3`, `request_changes/3` or `reject/3`.
 
-  Toda decisão grava `audit_log` na mesma transação e é idempotente: repetir a
-  mesma ação não duplica mensagem nem linha de auditoria.
+  Every decision writes `audit_log` in the same transaction and is idempotent: repeating the
+  same action does not duplicate the message or the audit row.
   """
   import Ecto.Query, warn: false
 
@@ -23,11 +23,11 @@ defmodule Freguesia.Verification do
   @max_code_attempts 3
   @rejection_cooldown_days 30
 
-  ## Cadastro
+  ## Signup
 
   @doc """
-  Changeset do formulário de cadastro, com as validações que dependem do catálogo.
-  Não grava nada.
+  Changeset for the signup form, with the validations that depend on the catalog.
+  Writes nothing.
   """
   def change_signup(attrs \\ %{}) do
     %Signup{}
@@ -36,11 +36,11 @@ defmodule Freguesia.Verification do
   end
 
   @doc """
-  Cria ou atualiza o lugar a partir do cadastro e envia o código de confirmação.
+  Creates or updates the place from the signup and sends the confirmation code.
 
-  Devolve `{:ok, place, delivery}`, com `delivery` em `:sent` ou `:failed`
-  (o lugar fica `pending` mesmo se o envio falhar), ou `{:error, changeset}`
-  com os erros do formulário.
+  Returns `{:ok, place, delivery}`, with `delivery` set to `:sent` or `:failed`
+  (the place stays `pending` even if the send fails), or `{:error, changeset}`
+  with the form errors.
   """
   def submit_signup(attrs) do
     changeset = change_signup(attrs)
@@ -67,7 +67,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  # Se o WhatsApp estiver fora, o lugar fica `pending` e o freguês reenvia depois.
+  # If WhatsApp is down, the place stays `pending` and the customer resends later.
   defp deliver_code(place) do
     case issue_code(place) do
       {:ok, _code} -> :sent
@@ -75,7 +75,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  @doc "Reenvia o código. Só depois de 60 segundos do último envio."
+  @doc "Resends the code. Only after 60 seconds since the last send."
   def resend_code(place_id) do
     place = Repo.get!(Place, place_id)
     last = last_code(place.id)
@@ -88,11 +88,11 @@ defmodule Freguesia.Verification do
   end
 
   @doc """
-  Confere o código. Acertou: marca o código como confirmado e abre o pedido na fila.
-  Errou: conta a tentativa (3 no máximo).
+  Checks the code. If it matches: marks the code as confirmed and opens the request in the queue.
+  If it does not: counts the attempt (3 at most).
   """
   def confirm_code(place_id, input) when is_binary(input) do
-    # Devolve {:ok, _} mesmo no erro: a tentativa contada não pode ser desfeita por rollback.
+    # Returns {:ok, _} even on error: the counted attempt must not be undone by a rollback.
     Repo.transact(fn -> {:ok, attempt_confirmation(place_id, input)} end)
     |> unwrap_transaction()
   end
@@ -113,13 +113,13 @@ defmodule Freguesia.Verification do
     end
   end
 
-  ## Fila do backoffice
+  ## Backoffice queue
 
   @doc """
-  Pedidos da fila, do mais antigo para o mais novo.
+  Queue requests, from oldest to newest.
 
-  Filtros: `:pending` (novos), `:in_review` (em análise), `:needs_changes`
-  (reenviados ao restaurante), `:all`.
+  Filters: `:pending` (new), `:in_review` (under review), `:needs_changes`
+  (sent back to the restaurant), `:all`.
   """
   def list_requests(filter \\ :pending) do
     Request
@@ -137,19 +137,19 @@ defmodule Freguesia.Verification do
     |> Map.new()
   end
 
-  @doc "Pedido com o lugar, o bairro de cada cobertura e as ofertas. `nil` se não existir."
+  @doc "Request with its place, the neighborhood of each coverage and the offers. `nil` if it does not exist."
   def get_request(id) do
     Request
     |> preload(place: [:neighborhood, :segment, :category, :offers, coverage: :neighborhood])
     |> Repo.get(id)
   end
 
-  @doc "Checagens automáticas atuais do lugar do pedido."
+  @doc "Current automatic checks for the request's place."
   def evaluate_checks(%Request{place: %Place{} = place}) do
     Checks.evaluate(place, open_complaints?(place.id))
   end
 
-  @doc "Marca o pedido como em análise quando o operador abre. Idempotente."
+  @doc "Marks the request as under review when the operator opens it. Idempotent."
   def start_review(%Request{status: :pending} = request, operator) do
     place = load_place(request.place_id)
 
@@ -174,8 +174,8 @@ defmodule Freguesia.Verification do
   def start_review(%Request{} = request, _operator), do: {:ok, request}
 
   @doc """
-  Aprova e publica o lugar. Exige as quatro checagens ok, ou uma nota interna
-  justificando a aprovação. Dispara a mensagem de aprovação com o link da página.
+  Approves and publishes the place. Requires all four checks to be ok, or an internal note
+  justifying the approval. Triggers the approval message with the page link.
   """
   def approve(%Request{id: id}, operator, note \\ nil) do
     Repo.transact(fn -> {:ok, decide_approval(lock_request!(id), operator, note)} end)
@@ -199,7 +199,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  @doc "Pede ajuste ao restaurante, com motivo obrigatório. Envia a mensagem com o motivo."
+  @doc "Requests adjustments from the restaurant, with a mandatory reason. Sends the message with the reason."
   def request_changes(%Request{id: id}, operator, reason) do
     Repo.transact(fn -> {:ok, decide_changes(lock_request!(id), operator, reason)} end)
     |> unwrap_transaction()
@@ -238,7 +238,7 @@ defmodule Freguesia.Verification do
              }
            ),
          {:ok, _} <-
-           Messaging.enqueue(place.whatsapp_e164, "pedido_ajuste", %{
+           Messaging.enqueue(place.whatsapp_e164, "adjustment_request", %{
              "name" => place.name,
              "reason" => reason
            }) do
@@ -246,7 +246,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  @doc "Recusa o cadastro, com motivo obrigatório. O número pode tentar de novo após 30 dias."
+  @doc "Rejects the signup, with a mandatory reason. The number may try again after 30 days."
   def reject(%Request{id: id}, operator, reason) do
     Repo.transact(fn -> {:ok, decide_rejection(lock_request!(id), operator, reason)} end)
     |> unwrap_transaction()
@@ -287,7 +287,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  ## Cadastro: internals
+  ## Signup: internals
 
   defp validate_against_catalog(changeset) do
     changeset
@@ -366,8 +366,8 @@ defmodule Freguesia.Verification do
     end
   end
 
-  # Um número só tem um lugar ativo. Reaproveita o registro se ainda não foi
-  # verificado; bloqueia se já está verificado ou se a recusa é recente.
+  # A phone number has only one active place. Reuses the record if it has not been
+  # verified yet; blocks if it is already verified or the rejection is recent.
   defp upsert_place(form, e164) do
     existing = Repo.one(from p in Place, where: p.whatsapp_e164 == ^e164 and is_nil(p.removed_at))
     save_existing_or_new(existing, form, e164)
@@ -476,7 +476,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  # Erros de domínio viram erros do formulário de cadastro, no campo certo.
+  # Domain errors become signup form errors, on the right field.
   defp add_signup_error(changeset, {:whatsapp, msg}) do
     Changeset.add_error(changeset, :whatsapp, msg)
   end
@@ -487,7 +487,7 @@ defmodule Freguesia.Verification do
     end)
   end
 
-  ## Código
+  ## Code
 
   defp issue_code(place) do
     code = generate_code()
@@ -503,8 +503,8 @@ defmodule Freguesia.Verification do
       })
       |> Repo.insert()
 
-    # Envio síncrono de propósito: o código não pode ir para a tabela oban_jobs.
-    case Messaging.deliver(place.whatsapp_e164, "codigo_verificacao", %{"code" => code}) do
+    # Deliberately synchronous: the code must not be stored in the oban_jobs table.
+    case Messaging.deliver(place.whatsapp_e164, "verification_code", %{"code" => code}) do
       :ok -> {:ok, record}
       {:error, reason} -> {:error, {:delivery_failed, reason}}
     end
@@ -589,7 +589,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  ## Decisões: internals
+  ## Decisions: internals
 
   defp do_approve(request, place, operator, checks, note) do
     with {:ok, request} <- update_request(request, :approved, operator, note, checks),
@@ -612,7 +612,7 @@ defmodule Freguesia.Verification do
              }
            ),
          {:ok, _} <-
-           Messaging.enqueue(place.whatsapp_e164, "lugar_aprovado", %{
+           Messaging.enqueue(place.whatsapp_e164, "place_approved", %{
              "name" => place.name,
              "url" => place_url(place)
            }) do
@@ -620,7 +620,7 @@ defmodule Freguesia.Verification do
     end
   end
 
-  # A oferta pendente mais nova vira a ativa; a anterior ativa vira `replaced`.
+  # The newest pending offer becomes active; the previously active one becomes `replaced`.
   defp publish_offer(place) do
     pending =
       Repo.one(
@@ -700,7 +700,7 @@ defmodule Freguesia.Verification do
     Application.fetch_env!(:freguesia, :public_url) <> "/lugar/" <> place.slug
   end
 
-  ## Utilidades
+  ## Utilities
 
   defp unwrap_transaction({:ok, {:ok, value}}), do: {:ok, value}
   defp unwrap_transaction({:ok, {:error, reason}}), do: {:error, reason}

@@ -1,7 +1,7 @@
 defmodule FreguesiaWeb.PageController do
   use FreguesiaWeb, :controller
 
-  # A inicial (`/`) vira a tela de onboarding na fase 1. Por ora, cai no bairro padrão.
+  # The root (`/`) becomes the onboarding screen in phase 1. For now it falls back to the default neighborhood.
   def home(conn, _params) do
     redirect(conn, to: ~p"/bairro/savassi")
   end

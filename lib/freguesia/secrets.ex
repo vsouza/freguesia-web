@@ -1,10 +1,10 @@
 defmodule Freguesia.Secrets do
   @moduledoc """
-  Chaves derivadas do `secret_key_base` para HMACs internos (códigos, hash de IP).
-  Cada uso tem o próprio `purpose`, então uma chave vazada de um uso não serve nos outros.
+  Keys derived from `secret_key_base` for internal HMACs (codes, IP hash).
+  Each use has its own `purpose`, so a key leaked from one use is useless for the others.
   """
 
-  @doc "Chave de 32 bytes para `purpose`."
+  @doc "32-byte key for `purpose`."
   def derive(purpose) when is_binary(purpose) do
     :crypto.mac(:hmac, :sha256, base_secret(), purpose)
   end

@@ -1,6 +1,6 @@
 defmodule Freguesia.Verification.DeliveryFailureTest do
-  # async: false de propósito. Troca o adaptador global de mensagens; em módulo
-  # assíncrono isso vazaria para os outros testes e eles perderiam o código.
+  # async: false on purpose. It swaps the global message adapter; in an async module
+  # this would leak into other tests, which would then lose their codes.
   use Freguesia.DataCase, async: false
 
   alias Freguesia.{Fixtures, Verification}
@@ -17,7 +17,7 @@ defmodule Freguesia.Verification.DeliveryFailureTest do
     :ok
   end
 
-  test "envio falho deixa o lugar pending e devolve :failed" do
+  test "failed delivery leaves the place pending and returns :failed" do
     assert {:ok, place, :failed} = Verification.submit_signup(Fixtures.signup_params())
     assert place.status == :pending
   end

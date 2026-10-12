@@ -1,9 +1,9 @@
 defmodule Freguesia.Catalog.ColorMap do
   @moduledoc """
-  Mapa de cor por categoria (PRD §12).
+  Color map per category (PRD §12).
 
-  As classes são escritas por extenso aqui para o Tailwind gerá-las.
-  Nunca monte o nome de classe por concatenação.
+  The classes are written out in full here so Tailwind can generate them.
+  Never build class names by concatenation.
   """
 
   @families %{
@@ -24,10 +24,10 @@ defmodule Freguesia.Catalog.ColorMap do
     }
   }
 
-  # Lugar não verificado usa `sand`, sem cor de categoria.
+  # An unverified place uses `sand`, with no category color.
   @neutral %{top: "bg-sand", tint: "bg-sand", accent: "text-ink-2"}
 
-  @doc "Classes do mapa para o `color_key` de um segmento ou categoria."
+  @doc "Map classes for the `color_key` of a segment or category."
   def for_key(key) when is_binary(key), do: Map.get(@families, key, @neutral)
   def for_key(_), do: @neutral
 

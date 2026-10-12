@@ -1,12 +1,12 @@
 defmodule FreguesiaWeb.DeviceSession do
   @moduledoc """
-  Identidade do dispositivo, sem conta (PRD §5 e §13).
+  Device identity, without an account (PRD §5 and §13).
 
-    * `device_id`: UUID aleatório em cookie assinado, `HttpOnly`, `SameSite=Lax`.
-      Não é fingerprint: é só um número sorteado.
-    * `ip24`: hash do /24 do IP para o antifraude. Vai para a sessão, nunca em claro.
+    * `device_id`: random UUID in a signed cookie, `HttpOnly`, `SameSite=Lax`.
+      Not a fingerprint: it is just a random number.
+    * `ip24`: hash of the IP /24 for anti-fraud. Goes into the session, never in the clear.
 
-  Os dois ficam em `conn.assigns` e na sessão, para o LiveView ler no mount.
+  Both are kept in `conn.assigns` and in the session, so the LiveView can read them on mount.
   """
   import Plug.Conn
 
@@ -47,7 +47,7 @@ defmodule FreguesiaWeb.DeviceSession do
     |> put_session("ip24", ip24)
   end
 
-  # Atrás do proxy do Fly, o IP real vem em `fly-client-ip`.
+  # Behind the Fly proxy, the real IP arrives in `fly-client-ip`.
   defp client_ip(conn) do
     case get_req_header(conn, "fly-client-ip") do
       [ip | _] -> ip

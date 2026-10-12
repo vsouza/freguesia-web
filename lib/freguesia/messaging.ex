@@ -1,15 +1,15 @@
 defmodule Freguesia.Messaging do
   @moduledoc """
-  Envio de mensagens transacionais por WhatsApp (PRD §11).
+  Sends transactional WhatsApp messages (PRD §11).
 
-  Só mensagens utilitárias e de autenticação. Nada de marketing.
-  O adaptador vem de `config :freguesia, :messaging`; em dev e teste é
+  Utility and authentication messages only. No marketing.
+  The adapter comes from `config :freguesia, :messaging`; in dev and test it is
   `Freguesia.Messaging.Fake`.
 
-  Código de verificação é enviado na hora, sem fila: o argumento de um job
-  Oban fica gravado em `oban_jobs`, e o código não pode ficar em texto puro.
-  Mensagens sem segredo (aprovação, pedido de ajuste) passam pela fila
-  `Freguesia.Workers.SendWhatsApp`, com retry.
+  The verification code is sent right away, with no queue: a job argument
+  in Oban is stored in `oban_jobs`, and the code must not sit there in plain text.
+  Messages without secrets (approval, adjustment request) go through the queue
+  `Freguesia.Workers.SendWhatsApp`, with retries.
   """
 
   alias Freguesia.Workers.SendWhatsApp
@@ -17,12 +17,12 @@ defmodule Freguesia.Messaging do
   @callback deliver(to :: String.t(), template :: String.t(), params :: map()) ::
               :ok | {:error, term()}
 
-  @doc "Envia agora. Usado para o código de verificação."
+  @doc "Sends now. Used for the verification code."
   def deliver(to, template, params) do
     adapter().deliver(to, template, params)
   end
 
-  @doc "Enfileira um envio com retry. Não use para segredos."
+  @doc "Enqueues a send with retries. Do not use for secrets."
   def enqueue(to, template, params) do
     %{"to" => to, "template" => template, "params" => params}
     |> SendWhatsApp.new()

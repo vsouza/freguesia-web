@@ -12,10 +12,10 @@ defmodule FreguesiaWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
-  Renders the consumer layout (catálogo, detalhes, cadastro).
+  Renders the consumer layout (catalog, details, signup).
 
-  Mobile-first, coluna central. Inclui o rodapé fixo da regra 7 do PRD (§4)
-  em toda tela pública.
+  Mobile-first, single centered column. Includes the fixed footer from rule 7 of the PRD (§4)
+  on every public screen.
 
   ## Examples
 
@@ -45,9 +45,9 @@ defmodule FreguesiaWeb.Layouts do
   end
 
   @doc """
-  Renders the backoffice layout (`/admin`). Utilitário, sem o rodapé de catálogo.
+  Renders the backoffice layout (`/admin`). Utility layout, without the catalog footer.
 
-  `operator` é o operador logado, ou `nil` na tela de login.
+  `operator` is the logged-in operator, or `nil` on the login screen.
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :operator, :any, default: nil, doc: "the signed-in operator, when there is one"

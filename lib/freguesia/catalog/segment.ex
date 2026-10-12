@@ -1,5 +1,5 @@
 defmodule Freguesia.Catalog.Segment do
-  @moduledoc "Segmento do catálogo: restaurantes, farmácias, mercados, construção, pet (PRD §9)."
+  @moduledoc "Catalog segment: restaurants, pharmacies, markets, hardware, pet (PRD §9)."
 
   use Freguesia.Schema
 

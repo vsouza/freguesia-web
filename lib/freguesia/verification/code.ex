@@ -1,8 +1,8 @@
 defmodule Freguesia.Verification.Code do
   @moduledoc """
-  Código de 6 dígitos enviado ao WhatsApp do restaurante (PRD §6).
+  6-digit code sent to the restaurant's WhatsApp (PRD §6).
 
-  Só o HMAC do código fica no banco. Validade de 10 minutos, 3 tentativas.
+  Only the code's HMAC is stored in the database. Valid for 10 minutes, 3 attempts.
   """
   use Freguesia.Schema
 

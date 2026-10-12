@@ -1,10 +1,10 @@
 defmodule Freguesia.Catalog.Offer do
   @moduledoc """
-  Vantagem informada pelo restaurante (PRD §4, regra 4).
+  Deal provided by the restaurant (PRD §4, rule 4).
 
-  Só aparece no catálogo quando `status` é `approved`. Toda edição do
-  restaurante cria uma nova linha `pending`, e a aprovada continua no ar
-  até a moderação decidir.
+  It only shows in the catalog when `status` is `approved`. Every edit by the
+  restaurant creates a new `pending` row, and the approved one stays live
+  until moderation decides.
   """
   use Freguesia.Schema
 

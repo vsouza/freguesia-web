@@ -1,10 +1,10 @@
 defmodule FreguesiaWeb.SignupLive do
   @moduledoc """
-  Cadastro de um lugar em 3 passos (PRD §6):
+  Place signup in 3 steps (PRD §6):
 
-    1. Dados do negócio
-    2. Código de 6 dígitos enviado ao WhatsApp
-    3. Tela de sucesso: o lugar só aparece depois da aprovação humana
+    1. Business details
+    2. 6-digit code sent to WhatsApp
+    3. Success screen: the place only appears after human approval
   """
   use FreguesiaWeb, :live_view
 
@@ -116,7 +116,7 @@ defmodule FreguesiaWeb.SignupLive do
 
   defp step_data(assigns) do
     selected_segment = Form.input_value(assigns.form, :segment_id)
-    # Sem segmento de restaurante cadastrado, nil == nil não pode ligar o campo.
+    # Without a registered restaurant segment, nil == nil must not enable the field.
     restaurant? = not is_nil(assigns.restaurant_id) and selected_segment == assigns.restaurant_id
     categories = categories_for(assigns.segments, selected_segment)
     selected_coverage = Form.input_value(assigns.form, :coverage_ids) || []

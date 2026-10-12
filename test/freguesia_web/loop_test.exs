@@ -1,5 +1,5 @@
 defmodule FreguesiaWeb.LoopTest do
-  @moduledoc "Loop do WhatsApp na camada web: redirect, cookie, folha de retorno e provas."
+  @moduledoc "WhatsApp loop on the web layer: redirect, cookie, return sheet and proofs."
   use FreguesiaWeb.ConnCase, async: true
 
   import Ecto.Query, warn: false
@@ -14,7 +14,7 @@ defmodule FreguesiaWeb.LoopTest do
   end
 
   describe "GET /r/:slug" do
-    test "registra a abertura e manda para o wa.me do lugar" do
+    test "records the opening and redirects to the place's wa.me link" do
       place = Fixtures.verified_place(%{whatsapp_e164: "+5531977776666"})
 
       conn = get(build_conn(), ~p"/r/#{place.slug}")
@@ -23,7 +23,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 1
     end
 
-    test "cookie de dispositivo é criado no primeiro acesso e reaproveitado depois" do
+    test "device cookie is created on the first visit and reused afterwards" do
       place = Fixtures.verified_place()
 
       first = get(build_conn(), ~p"/r/#{place.slug}")
@@ -34,7 +34,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert second.assigns.device_id == device
     end
 
-    test "lugar com botão escondido não registra abertura e volta à página do lugar" do
+    test "place with a hidden button records no opening and returns to the place page" do
       place = Fixtures.verified_place()
 
       for _ <- 1..2 do
@@ -54,7 +54,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 0
     end
 
-    test "lugar pausado não registra abertura" do
+    test "paused place records no opening" do
       place =
         Fixtures.verified_place(%{
           paused_until: DateTime.add(DateTime.utc_now() |> DateTime.truncate(:second), 3600)
@@ -66,44 +66,44 @@ defmodule FreguesiaWeb.LoopTest do
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 0
     end
 
-    test "lugar que não está no catálogo volta ao bairro" do
+    test "place not in the catalog redirects to the neighborhood" do
       conn = get(build_conn(), ~p"/r/nao-existe")
       assert redirected_to(conn) == ~p"/bairro/savassi"
     end
   end
 
-  describe "folha de retorno" do
-    test "aparece quando a aba volta ao foco e há abertura pendente" do
+  describe "return sheet" do
+    test "shows up when the tab regains focus and there is a pending opening" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
       {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
-      # ao entrar, a folha já aparece; o evento de foco não abre uma segunda
+      # on entry the sheet already shows; the focus event does not open a second one
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
 
       render_hook(view, "returned", %{})
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
     end
 
-    test "entrar na página com abertura pendente abre a folha, sem evento de foco" do
+    test "opening the page with a pending opening shows the sheet, with no focus event" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
-      # Voltou pelo histórico: a página carrega de novo, sem visibilitychange
+      # Came back through history: the page loads again, with no visibilitychange
       {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
     end
 
-    test "o botão de WhatsApp abre em nova aba, e a página original continua aberta" do
+    test "the WhatsApp button opens in a new tab, and the original page stays open" do
       place = Fixtures.verified_place()
       {:ok, view, _html} = live(build_conn(), ~p"/lugar/#{place.slug}")
 
       assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}'][target='_blank']")
     end
 
-    test "sem abertura pendente, a folha não aparece" do
+    test "without a pending opening, the sheet does not appear" do
       place = Fixtures.verified_place()
       {conn, _device} = visit(build_conn(), place)
 
@@ -113,7 +113,7 @@ defmodule FreguesiaWeb.LoopTest do
       refute has_element?(view, "#return-sheet")
     end
 
-    test "sim, depois faixa de economia, grava o relato e fecha a folha" do
+    test "yes, then a savings band, records the report and closes the sheet" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, open} = Reports.open_whatsapp(place.id, device)
@@ -135,7 +135,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert Repo.get!(Open, open.id).responded_at
     end
 
-    test "não, depois motivo, grava falha" do
+    test "no, then reason, records a failure" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, open} = Reports.open_whatsapp(place.id, device)
@@ -151,7 +151,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert report.fail_reason == :no_coverage
     end
 
-    test "número errado ou golpe abre denúncia" do
+    test "wrong number or scam opens a complaint" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
@@ -164,7 +164,7 @@ defmodule FreguesiaWeb.LoopTest do
       assert Repo.aggregate(from(c in Complaint, where: c.place_id == ^place.id), :count) == 1
     end
 
-    test "responder depois fecha a folha e a abertura continua pendente" do
+    test "answering later closes the sheet and the opening stays pending" do
       place = Fixtures.verified_place()
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
@@ -178,7 +178,7 @@ defmodule FreguesiaWeb.LoopTest do
     end
   end
 
-  describe "provas da economia" do
+  describe "savings proofs" do
     defp answer_many!(place, n, band) do
       for _ <- 1..n do
         device = Ecto.UUID.generate()
@@ -194,7 +194,7 @@ defmodule FreguesiaWeb.LoopTest do
       Stats.refresh()
     end
 
-    test "com 10 ou mais relatos mostra a média e a fonte" do
+    test "with 10 or more reports shows the average and its source" do
       place = Fixtures.verified_place()
       answer_many!(place, 10, "le10")
 
@@ -205,7 +205,7 @@ defmodule FreguesiaWeb.LoopTest do
       refute html =~ "Poucos relatos"
     end
 
-    test "abaixo de 10 relatos não mostra média, só o convite para contar" do
+    test "under 10 reports shows no average, only the invitation to report" do
       place = Fixtures.verified_place()
       answer_many!(place, 3, "le10")
 
@@ -215,7 +215,7 @@ defmodule FreguesiaWeb.LoopTest do
       refute html =~ "a menos, em média, do que nos apps"
     end
 
-    test "funcionou só aparece com resposta, e a barra só com 5 ou mais" do
+    test "'worked' only shows with responses, and the bar only with 5 or more" do
       place = Fixtures.verified_place()
       answer_many!(place, 3, "le10")
 

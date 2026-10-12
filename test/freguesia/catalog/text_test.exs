@@ -28,7 +28,7 @@ defmodule Freguesia.Catalog.TextTest do
     end
   end
 
-  test "casa acentos e & na busca" do
+  test "matches accents and & in search" do
     assert Text.normalize("Pão de Açúcar & Cia") == "pao de acucar e cia"
   end
 end

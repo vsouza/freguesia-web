@@ -4,21 +4,21 @@ defmodule Freguesia.AdminTest do
   alias Freguesia.{Admin, Fixtures, Repo}
   alias Freguesia.Admin.AuditEntry
 
-  describe "senha" do
-    test "create_operator grava hash, nunca a senha" do
+  describe "password" do
+    test "create_operator stores a hash, never the password" do
       operator = Fixtures.operator()
       assert operator.password_hash =~ "$argon2id$"
       refute operator.password
     end
 
-    test "senha curta é recusada" do
+    test "short password is rejected" do
       assert {:error, changeset} =
                Admin.create_operator(%{email: "x@freguesia.test", password: "curta"})
 
       assert changeset.errors[:password]
     end
 
-    test "authenticate aceita a senha certa e recusa a errada e e-mail desconhecido" do
+    test "authenticate accepts the right password and rejects a wrong one and unknown emails" do
       operator = Fixtures.operator(%{email: "ana@freguesia.test"})
 
       assert {:ok, found} = Admin.authenticate("ANA@freguesia.test ", Fixtures.password())
@@ -32,7 +32,7 @@ defmodule Freguesia.AdminTest do
   end
 
   describe "2FA (TOTP)" do
-    test "enrolamento: o código certo confirma e depois é exigido" do
+    test "enrollment: the right code confirms it and it is required from then on" do
       operator = Fixtures.operator()
 
       assert {:ok, operator, uri} = Admin.start_totp_enrollment(operator)
@@ -49,7 +49,7 @@ defmodule Freguesia.AdminTest do
       assert {:error, :invalid_code} = Admin.verify_totp(confirmed, "000000x")
     end
 
-    test "recarregar o enrolamento não troca o segredo" do
+    test "reloading the enrollment does not change the secret" do
       operator = Fixtures.operator()
       {:ok, first, _} = Admin.start_totp_enrollment(operator)
       {:ok, second, _} = Admin.start_totp_enrollment(first)
@@ -57,26 +57,26 @@ defmodule Freguesia.AdminTest do
       assert first.totp_secret == second.totp_secret
     end
 
-    test "código de enrolamento errado não confirma" do
+    test "wrong enrollment code does not confirm" do
       {:ok, operator, _} = Admin.start_totp_enrollment(Fixtures.operator())
       assert {:error, :invalid_code} = Admin.confirm_totp_enrollment(operator, "123456x")
     end
 
-    test "operador sem 2FA confirmado não passa na verificação" do
+    test "an operator without confirmed 2FA does not pass verification" do
       {:ok, operator, _} = Admin.start_totp_enrollment(Fixtures.operator())
       assert {:error, :not_enrolled} = Admin.verify_totp(operator, "123456")
     end
   end
 
-  describe "sessão" do
-    test "sessão dentro de 8 horas devolve o operador" do
+  describe "session" do
+    test "a session within 8 hours returns the operator" do
       operator = Fixtures.operator()
       session = %{"operator_id" => operator.id, "operator_at" => System.system_time(:second)}
 
       assert Admin.fetch_session_operator(session).id == operator.id
     end
 
-    test "sessão mais antiga que 8 horas expira" do
+    test "a session older than 8 hours expires" do
       operator = Fixtures.operator()
       old = System.system_time(:second) - Admin.session_ttl_seconds() - 1
       session = %{"operator_id" => operator.id, "operator_at" => old}
@@ -84,13 +84,13 @@ defmodule Freguesia.AdminTest do
       assert Admin.fetch_session_operator(session) == nil
     end
 
-    test "sem sessão não há operador" do
+    test "without a session there is no operator" do
       assert Admin.fetch_session_operator(%{}) == nil
     end
   end
 
   describe "audit_log" do
-    test "record_audit grava a linha" do
+    test "record_audit writes the row" do
       operator = Fixtures.operator()
 
       assert {:ok, entry} =
@@ -100,10 +100,10 @@ defmodule Freguesia.AdminTest do
       assert [_] = Admin.audit_entries("place", "abc")
     end
 
-    test "o banco não deixa alterar nem apagar uma linha do audit_log" do
+    test "the database does not allow updating or deleting an audit_log row" do
       {:ok, _entry} = Admin.record_audit(nil, "teste.imutavel", "place", "x", nil, nil)
 
-      assert_raise Postgrex.Error, ~r/audit_log é imutável/, fn ->
+      assert_raise Postgrex.Error, ~r/audit_log is immutable/, fn ->
         Repo.update_all(AuditEntry, set: [action: "adulterado"])
       end
     end

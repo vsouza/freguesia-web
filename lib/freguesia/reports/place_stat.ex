@@ -1,7 +1,7 @@
 defmodule Freguesia.Reports.PlaceStat do
   @moduledoc """
-  Números de um lugar por janela (30 ou 90 dias), materializados pelo job a cada
-  15 minutos (PRD §9). A home lê esta tabela e nunca agrega na requisição.
+  A place's numbers per window (30 or 90 days), materialized by the job every
+  15 minutes (PRD §9). The home reads this table and never aggregates during the request.
   """
   use Freguesia.Schema
 

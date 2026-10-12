@@ -3,9 +3,9 @@ defmodule Freguesia.Repo.Migrations.AddAntifraudToReports do
 
   def change do
     alter table(:reports) do
-      # Hash HMAC do /24 do IP, com salt que muda por dia. Expira em 30 dias (PRD §8, §13).
+      # HMAC hash of the IP /24, with a salt that changes daily. Expires after 30 days (PRD §8, §13).
       add :ip24_hash, :binary
-      # Por que o relato ficou inválido: device_limit ou batch_review.
+      # Why the report became invalid: device_limit or batch_review.
       add :invalid_reason, :string
     end
 
