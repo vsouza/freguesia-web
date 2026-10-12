@@ -7,6 +7,7 @@ defmodule Freguesia.Catalog do
 
   alias Freguesia.Catalog.{Neighborhood, Offer, OpeningHours, Place, PlaceCoverage, Segment, Text}
   alias Freguesia.Repo
+  alias Freguesia.Reports.{PlaceStat, Stats}
 
   @doc "Bairros do piloto, em ordem alfabética."
   def list_pilot_neighborhoods do
@@ -45,18 +46,32 @@ defmodule Freguesia.Catalog do
         from p in Place,
           where: p.status == :verified,
           where: p.neighborhood_id == ^neighborhood_id or p.id in subquery(coverage),
-          preload: [:segment, :category, :neighborhood, offers: ^approved_offers_query()]
+          preload: [
+            :segment,
+            :category,
+            :neighborhood,
+            offers: ^approved_offers_query(),
+            stats: ^from(s in PlaceStat, where: s.window in ["30d", "90d"])
+          ]
       )
 
     places
     |> Enum.map(&with_hours_status(&1, now))
-    |> Enum.sort_by(fn place -> {closed_rank(place.hours_status), Text.normalize(place.name)} end)
+    |> Enum.sort_by(fn place ->
+      {closed_rank(place.hours_status), -worked_30d(place), Text.normalize(place.name)}
+    end)
   end
 
   @doc "Lugar pelo slug, com a oferta aprovada e o status de horário. `nil` se não existir."
   def get_place_by_slug(slug, now \\ DateTime.utc_now()) do
     Place
-    |> preload([:segment, :category, :neighborhood, offers: ^approved_offers_query()])
+    |> preload([
+      :segment,
+      :category,
+      :neighborhood,
+      offers: ^approved_offers_query(),
+      stats: ^from(s in PlaceStat, where: s.window in ["30d", "90d"])
+    ])
     |> Repo.get_by(slug: slug)
     |> case do
       nil -> nil
@@ -78,6 +93,8 @@ defmodule Freguesia.Catalog do
   defp with_hours_status(place, now) do
     %{place | hours_status: OpeningHours.status(place.opening_hours, place.paused_until, now)}
   end
+
+  defp worked_30d(place), do: Stats.window(place, "30d").worked
 
   defp closed_rank({:open, _}), do: 0
   defp closed_rank({:paused}), do: 2

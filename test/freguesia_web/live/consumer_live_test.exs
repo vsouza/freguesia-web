@@ -61,20 +61,14 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
   end
 
   describe "detalhes do lugar (/lugar/:slug)" do
-    test "lugar verificado mostra o botão de WhatsApp com número e mensagem padrão", %{conn: conn} do
+    test "lugar verificado mostra o botão de WhatsApp que passa pelo registro de abertura", %{
+      conn: conn
+    } do
       place = Fixtures.verified_place(%{name: "Pizza do Lago", whatsapp_e164: "+5531977776666"})
 
       {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
 
-      assert has_element?(view, "#whatsapp-cta")
-      html = view |> element("#whatsapp-cta") |> render()
-      assert html =~ "https://wa.me/5531977776666?text="
-
-      assert html =~
-               URI.encode(
-                 "Oi! Vi o Pizza do Lago na Freguesia e quero pedir direto.",
-                 &URI.char_unreserved?/1
-               )
+      assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}']")
     end
 
     test "lugar pausado mostra o estado e não oferece o botão de pedido", %{conn: conn} do

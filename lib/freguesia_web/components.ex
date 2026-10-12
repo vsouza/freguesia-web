@@ -9,6 +9,7 @@ defmodule FreguesiaWeb.Components do
   import FreguesiaWeb.CoreComponents, only: [icon: 1]
 
   alias Freguesia.Catalog.ColorMap
+  alias Freguesia.Reports.{Savings, Stats}
 
   @doc """
   Card de um lugar na lista do bairro.
@@ -27,7 +28,15 @@ defmodule FreguesiaWeb.Components do
     colors = if verified?, do: category_colors(place), else: ColorMap.neutral()
     # Regra 4 (PRD §4): no card só o resumo da oferta; sem resumo, nada aparece.
     offer = if verified?, do: Freguesia.Catalog.active_offer(place)
-    assigns = assign(assigns, verified?: verified?, colors: colors, offer: offer)
+
+    assigns =
+      assign(assigns,
+        verified?: verified?,
+        colors: colors,
+        offer: offer,
+        funcionou_text: funcionou_chip(place),
+        economia_text: economia_chip(place)
+      )
 
     ~H"""
     <.link
@@ -58,8 +67,25 @@ defmodule FreguesiaWeb.Components do
 
       <.not_verified_note :if={!@verified?} />
 
+      <div :if={@verified? and is_list(@place.stats)} class="flex flex-wrap gap-2">
+        <.proof_chip :if={@funcionou_text} text={@funcionou_text} />
+        <.proof_chip :if={@economia_text} text={@economia_text} />
+      </div>
+
       <.offer_tag :if={@offer && @offer.tag} text={@offer.tag} />
     </.link>
+    """
+  end
+
+  @doc """
+  Prova de que o pedido direto funciona: "Funcionou 31/33". Só aparece com ao menos
+  1 resposta em 30 dias (PRD §8).
+  """
+  attr :text, :string, required: true
+
+  def proof_chip(assigns) do
+    ~H"""
+    <span class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-bold text-ink-2">{@text}</span>
     """
   end
 
@@ -109,6 +135,109 @@ defmodule FreguesiaWeb.Components do
   defp not_verified_note(assigns) do
     ~H"""
     <p class="text-xs text-muted">Ainda não verificado pelo restaurante.</p>
+    """
+  end
+
+  @doc """
+  Folha inferior (retorno do WhatsApp, PRD §5). Sem fundo escuro: o foco fica nela.
+  """
+  attr :id, :string, required: true
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  def bottom_sheet(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={"#{@id}-title"}
+      class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-sheet bg-white p-6 shadow-nav md:max-w-xl"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-line" aria-hidden="true"></div>
+      <h2 id={"#{@id}-title"} class="text-lg font-extrabold text-ink">{@title}</h2>
+      <div class="mt-4">{render_slot(@inner_block)}</div>
+    </div>
+    """
+  end
+
+  @doc """
+  Histograma das cinco faixas de economia (PRD §8). A faixa da média fica destacada.
+  """
+  attr :hist, :map, required: true
+  attr :avg, :any, required: true
+
+  def savings_histogram(assigns) do
+    total = assigns.hist |> Map.values() |> Enum.sum() |> max(1)
+    highlight = Savings.band_for_average(assigns.avg && Decimal.to_float(assigns.avg))
+
+    assigns =
+      assign(assigns,
+        total: total,
+        highlight: highlight,
+        bands: Savings.bands()
+      )
+
+    ~H"""
+    <figure
+      role="img"
+      aria-label={"Distribuição da economia relatada. Faixa da média: #{Savings.label(@highlight)}."}
+    >
+      <ul class="flex flex-col gap-2">
+        <li
+          :for={{key, _mid, label} <- @bands}
+          class="grid grid-cols-[7rem_1fr_2.5rem] items-center gap-3 text-xs"
+        >
+          <span class={[
+            "font-semibold",
+            key == @highlight && "text-ink",
+            key != @highlight && "text-muted"
+          ]}>
+            {label}
+          </span>
+          <span class="h-2 overflow-hidden rounded-full bg-sand">
+            <span
+              class={[
+                "block h-full rounded-full",
+                key == @highlight && "bg-ink",
+                key != @highlight && "bg-line"
+              ]}
+              style={"width: #{percent(Map.get(@hist, key, 0), @total)}%"}
+            >
+            </span>
+          </span>
+          <span class="text-right font-semibold text-ink-2">{Map.get(@hist, key, 0)}</span>
+        </li>
+      </ul>
+    </figure>
+    """
+  end
+
+  @doc """
+  "Funcionou X/Y em 30 dias". Barra só com 5 ou mais respostas (PRD §8).
+  """
+  attr :worked, :integer, required: true
+  attr :responses, :integer, required: true
+
+  def funcionou_bar(assigns) do
+    ~H"""
+    <div>
+      <p class="text-sm font-bold text-ink">
+        <%= if @responses == 0 do %>
+          Ainda sem respostas nos últimos 30 dias
+        <% else %>
+          Funcionou {@worked}/{@responses} em 30 dias
+        <% end %>
+      </p>
+      <div
+        :if={@responses >= 5}
+        class="mt-2 h-2 overflow-hidden rounded-full bg-sand"
+        aria-hidden="true"
+      >
+        <div class="h-full rounded-full bg-ink" style={"width: #{percent(@worked, @responses)}%"}>
+        </div>
+      </div>
+    </div>
     """
   end
 
@@ -176,6 +305,27 @@ defmodule FreguesiaWeb.Components do
     text = "Oi! Vi o #{place_name} na Freguesia e quero pedir direto."
     "https://wa.me/#{digits}?text=#{URI.encode(text, &URI.char_unreserved?/1)}"
   end
+
+  defp funcionou_chip(place) do
+    if is_list(place.stats) do
+      stat = Stats.window(place, "30d")
+      if stat.responses >= 1, do: "Funcionou #{stat.worked}/#{stat.responses}"
+    end
+  end
+
+  defp economia_chip(place) do
+    if is_list(place.stats) do
+      stat = Stats.window(place, "90d")
+      n = stat.savings_hist |> Map.values() |> Enum.sum()
+      if n >= 10, do: "Economia média #{round_avg(stat.savings_avg)}%"
+    end
+  end
+
+  defp round_avg(nil), do: 0
+  defp round_avg(avg), do: avg |> Decimal.round(0) |> Decimal.to_integer()
+
+  defp percent(_part, 0), do: 0
+  defp percent(part, total), do: round(part * 100 / total)
 
   defp category_colors(%{category: %{color_key: key}}) when is_binary(key),
     do: ColorMap.for_key(key)

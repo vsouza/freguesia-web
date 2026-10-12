@@ -80,8 +80,11 @@ defmodule FreguesiaWeb.G1Test do
 
     # 6. E a página de detalhes tem o botão de pedir no WhatsApp
     {:ok, place, _} = live(build_conn(), ~p"/lugar/pizzaria-g1")
-    assert has_element?(place, "#whatsapp-cta")
-    assert render(place) =~ "wa.me/" <> String.replace(e164, "+", "")
+    assert has_element?(place, "a#whatsapp-cta[href='/r/pizzaria-g1']")
+
+    # ...e o clique registra a abertura e leva ao wa.me do restaurante
+    redirected = build_conn() |> get("/r/pizzaria-g1")
+    assert redirected_to(redirected, 302) =~ "https://wa.me/" <> String.replace(e164, "+", "")
 
     # O operador de teste ficou com 2FA confirmado
     assert Repo.get!(Operator, operator.id).totp_confirmed_at

@@ -31,6 +31,7 @@ defmodule Freguesia.Catalog.Place do
 
     has_many :coverage, Freguesia.Catalog.PlaceCoverage
     has_many :offers, Freguesia.Catalog.Offer
+    has_many :stats, Freguesia.Reports.PlaceStat
 
     # Calculado por requisição (PRD §8), nunca persistido.
     field :hours_status, :any, virtual: true

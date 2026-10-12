@@ -25,6 +25,7 @@ defmodule FreguesiaWeb.Router do
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {FreguesiaWeb.Layouts, :root}
+    plug FreguesiaWeb.DeviceSession
     plug :protect_from_forgery
 
     plug :put_secure_browser_headers, %{
@@ -50,6 +51,7 @@ defmodule FreguesiaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/r/:slug", WhatsAppController, :open
 
     live_session :catalog do
       live "/bairro/:slug", NeighborhoodLive

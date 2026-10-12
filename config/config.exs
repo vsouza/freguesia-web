@@ -23,8 +23,15 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 config :freguesia, Oban,
   engine: Oban.Engines.Basic,
   repo: Freguesia.Repo,
-  queues: [messaging: 5],
-  plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
+  queues: [messaging: 5, default: 2],
+  plugins: [
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"*/15 * * * *", Freguesia.Workers.ComputePlaceStats},
+       {"0 3 * * *", Freguesia.Workers.PurgeIpHashes}
+     ]}
+  ]
 
 # Configure the endpoint
 config :freguesia, FreguesiaWeb.Endpoint,
