@@ -79,10 +79,28 @@ defmodule FreguesiaWeb.LoopTest do
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
       {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
-      refute has_element?(view, "#return-sheet")
+      # ao entrar, a folha já aparece; o evento de foco não abre uma segunda
+      assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
 
       render_hook(view, "returned", %{})
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
+    end
+
+    test "entrar na página com abertura pendente abre a folha, sem evento de foco" do
+      place = Fixtures.verified_place()
+      {conn, device} = visit(build_conn(), place)
+      {:ok, _open} = Reports.open_whatsapp(place.id, device)
+
+      # Voltou pelo histórico: a página carrega de novo, sem visibilitychange
+      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
+    end
+
+    test "o botão de WhatsApp abre em nova aba, e a página original continua aberta" do
+      place = Fixtures.verified_place()
+      {:ok, view, _html} = live(build_conn(), ~p"/lugar/#{place.slug}")
+
+      assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}'][target='_blank']")
     end
 
     test "sem abertura pendente, a folha não aparece" do

@@ -49,7 +49,8 @@ defmodule FreguesiaWeb.PlaceLive do
          stats: Stats.for_place(place.id),
          hidden?: Reports.whatsapp_hidden?(place.id),
          sheet: nil
-       )}
+       )
+       |> then(&if(connected?(socket), do: open_pending_sheet(&1), else: &1))}
     else
       {:ok,
        socket
@@ -61,20 +62,7 @@ defmodule FreguesiaWeb.PlaceLive do
   ## Folha de retorno
 
   @impl true
-  def handle_event("returned", _params, %{assigns: %{sheet: nil}} = socket) do
-    %{place: place, device_id: device_id} = socket.assigns
-
-    case device_id && Reports.pending_open(place.id, device_id) do
-      nil ->
-        {:noreply, socket}
-
-      open ->
-        Events.track("return_prompt_shown", %{place_slug: place.slug}, device_id)
-        {:noreply, assign(socket, sheet: %{open_id: open.id, step: :ask})}
-    end
-  end
-
-  def handle_event("returned", _params, socket), do: {:noreply, socket}
+  def handle_event("returned", _params, socket), do: {:noreply, open_pending_sheet(socket)}
 
   def handle_event("later", _params, socket) do
     # "Responder depois": fecha, mas a abertura continua pendente até 2 h.
@@ -99,6 +87,22 @@ defmodule FreguesiaWeb.PlaceLive do
       :error -> {:noreply, put_flash(socket, :error, "Escolha um motivo da lista.")}
     end
   end
+
+  # Abre a folha se houver abertura pendente de até 2 h e a folha ainda estiver fechada.
+  defp open_pending_sheet(%{assigns: %{sheet: nil}} = socket) do
+    %{place: place, device_id: device_id} = socket.assigns
+
+    case device_id && Reports.pending_open(place.id, device_id) do
+      nil ->
+        socket
+
+      open ->
+        Events.track("return_prompt_shown", %{place_slug: place.slug}, device_id)
+        assign(socket, sheet: %{open_id: open.id, step: :ask})
+    end
+  end
+
+  defp open_pending_sheet(socket), do: socket
 
   defp answer(%{assigns: %{sheet: %{open_id: open_id}}} = socket, attrs) do
     %{device_id: device_id, ip24: ip24, place: place} = socket.assigns
@@ -200,13 +204,16 @@ defmodule FreguesiaWeb.PlaceLive do
                 Número em revisão
               </span>
             <% @place.status == :verified and @place.hours_status != {:paused} -> %>
-              <.link
-                navigate={~p"/r/#{@place.slug}"}
+              <%!-- Nova aba: a página continua aberta e a folha aparece quando a aba volta ao foco. --%>
+              <a
+                href={~p"/r/#{@place.slug}"}
+                target="_blank"
+                rel="noopener"
                 id="whatsapp-cta"
                 class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 text-base font-bold text-white transition duration-150 hover:bg-ink-2 active:scale-[0.98]"
               >
                 <.icon name="hero-chat-bubble-left-ellipsis" class="size-5" /> Pedir no WhatsApp
-              </.link>
+              </a>
             <% true -> %>
               <span
                 id="whatsapp-cta"
