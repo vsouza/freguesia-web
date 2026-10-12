@@ -41,5 +41,5 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
-# Jobs rodam na hora nos testes; a mensagem cai no Fake e pode ser lida.
+# Jobs run inline in tests; the message lands in the Fake and can be read.
 config :freguesia, Oban, testing: :inline

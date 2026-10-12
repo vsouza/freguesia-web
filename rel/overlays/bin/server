@@ -3,7 +3,7 @@ set -eu
 
 cd -P -- "$(dirname -- "$0")"
 
-# Migrações no boot (PRD §15). Falhou aqui, o release não sobe.
+# Migrations on boot (PRD §15). If this fails, the release does not start.
 ./freguesia eval "Freguesia.Release.migrate()"
 
 PHX_SERVER=true exec ./freguesia start

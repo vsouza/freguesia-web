@@ -1,7 +1,7 @@
 defmodule Freguesia.Repo.Migrations.OffersStatusReplaced do
   use Ecto.Migration
 
-  # Quando uma nova oferta é aprovada, a anterior sai do ar mas fica no histórico.
+  # When a new offer is approved, the previous one leaves the air but stays in history.
   def up do
     drop constraint(:offers, :offers_status_valid)
 

@@ -1,5 +1,5 @@
 defmodule Freguesia.Catalog.Category do
-  @moduledoc "Categoria dentro de um segmento, por exemplo pizza ou japonesa (PRD §9)."
+  @moduledoc "Category within a segment, for example pizza or Japanese (PRD §9)."
 
   use Freguesia.Schema
 

@@ -1,6 +1,6 @@
 defmodule Freguesia.Fixtures do
   @moduledoc """
-  Dados de teste do domínio. Cada função cria o que falta e devolve o registro.
+  Domain test data. Each function creates what is missing and returns the record.
   """
   alias Freguesia.{Admin, Repo}
   alias Freguesia.Catalog.{Category, City, Neighborhood, Place, PlaceCoverage, Segment, Text}
@@ -10,9 +10,9 @@ defmodule Freguesia.Fixtures do
   def password, do: @password
 
   @doc """
-  Dados de referência (cidade, bairros, segmento, categoria). Criados uma vez, no
-  `test_helper.exs`, com o sandbox em modo `auto`. Assim os testes assíncronos
-  só leem essas linhas e não disputam chaves únicas, o que causava deadlock.
+  Reference data (city, neighborhoods, segment, category). Created once, in
+  `test_helper.exs`, with the sandbox in `auto` mode. This way the async tests
+  only read these rows and do not compete for unique keys, which used to cause a deadlock.
   """
   def reference_data! do
     city()
@@ -66,7 +66,7 @@ defmodule Freguesia.Fixtures do
     operator
   end
 
-  @doc "Horário aberto todo dia, das 11h às 22h (em minutos)."
+  @doc "Open every day, 11:00 to 22:00 (in minutes)."
   def all_day_hours do
     interval = [[660, 1320]]
 
@@ -81,7 +81,7 @@ defmodule Freguesia.Fixtures do
     }
   end
 
-  @doc "Lugar já verificado, com cobertura no próprio bairro."
+  @doc "Already verified place, covering its own neighborhood."
   def verified_place(attrs \\ %{}) do
     neighborhood = Map.get_lazy(attrs, :neighborhood, fn -> neighborhood() end)
     name = Map.get(attrs, :name, "Pizzaria Teste #{System.unique_integer([:positive])}")
@@ -121,7 +121,7 @@ defmodule Freguesia.Fixtures do
     Repo.preload(place, [:neighborhood, :segment, :category])
   end
 
-  @doc "Parâmetros de formulário do cadastro, com a forma que o LiveView envia (chaves string)."
+  @doc "Signup form params, in the shape LiveView sends (string keys)."
   def signup_params(overrides \\ %{}) do
     neighborhood = neighborhood()
     segment = restaurants()
@@ -141,7 +141,7 @@ defmodule Freguesia.Fixtures do
     |> Map.merge(overrides)
   end
 
-  # Número único por chamada: o Fake de mensagens é global e os testes rodam em paralelo.
+  # Unique number per call: the message Fake is global and tests run in parallel.
   def unique_whatsapp do
     digits =
       System.unique_integer([:positive])

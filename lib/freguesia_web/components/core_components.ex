@@ -2,10 +2,10 @@ defmodule FreguesiaWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
-  Os componentes são escritos só com Tailwind e os tokens de `assets/css/app.css`
-  (PRD §12). Não usamos daisyUI: o visual da Freguesia é próprio.
+  The components are written with Tailwind only, using the tokens from `assets/css/app.css`
+  (PRD §12). We do not use daisyUI: Freguesia has its own look.
 
-  Ícones: use sempre `<.icon>` (Heroicons via plugin Tailwind).
+  Icons: always use `<.icon>` (Heroicons via the Tailwind plugin).
   """
   use Phoenix.Component
   use Gettext, backend: FreguesiaWeb.Gettext
@@ -19,7 +19,7 @@ defmodule FreguesiaWeb.CoreComponents do
   ## Examples
 
       <.flash kind={:info} flash={@flash} />
-      <.flash kind={:error} title="Algo deu errado">Tente de novo.</.flash>
+      <.flash kind={:error} title="Something went wrong">Try again.</.flash>
   """
   attr :id, :string, doc: "the optional id of flash container"
   attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
@@ -73,9 +73,9 @@ defmodule FreguesiaWeb.CoreComponents do
 
   ## Examples
 
-      <.button>Pedir</.button>
-      <.button variant="outline">Abrir conversa</.button>
-      <.button navigate={~p"/"}>Início</.button>
+      <.button>Order</.button>
+      <.button variant="outline">Open chat</.button>
+      <.button navigate={~p"/"}>Home</.button>
   """
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   attr :class, :any, default: nil
@@ -91,7 +91,7 @@ defmodule FreguesiaWeb.CoreComponents do
       "outline" => "border border-ink bg-white text-ink hover:bg-sand"
     }
 
-    # `class` extra é somado às classes base, não as substitui.
+    # An extra `class` is appended to the base classes, not replacing them.
     assigns =
       assign(assigns, :class, [base, Map.fetch!(variants, assigns.variant), assigns[:class]])
 

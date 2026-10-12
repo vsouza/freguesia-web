@@ -1,9 +1,9 @@
 defmodule Freguesia.Verification.Request do
   @moduledoc """
-  Pedido de verificação na fila do backoffice (tabela `verification_requests`).
+  Verification request in the backoffice queue (`verification_requests` table).
 
-  Nasce quando o código do WhatsApp é confirmado. Cada decisão do operador
-  muda o `status` do pedido e o do lugar, na mesma transação.
+  Created when the WhatsApp code is confirmed. Each operator decision
+  changes the request `status` and the place's, in the same transaction.
   """
   use Freguesia.Schema
 

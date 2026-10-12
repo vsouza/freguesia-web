@@ -86,7 +86,7 @@ defmodule FreguesiaWeb do
       import Phoenix.HTML
       # Core UI components
       import FreguesiaWeb.CoreComponents
-      # Componentes do design da Freguesia (PRD §12)
+      # Freguesia design-system components (PRD §12)
       import FreguesiaWeb.Components
 
       # Common modules used in templates

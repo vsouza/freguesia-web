@@ -1,13 +1,13 @@
 defmodule Freguesia.Catalog.OpeningHours do
   @moduledoc """
-  Status aberto/fechado calculado por requisição (PRD §8).
+  Open/closed status computed per request (PRD §8).
 
-  `opening_hours` é um mapa por dia da semana, com intervalos em minutos desde
-  a meia-noite, no fuso `America/Sao_Paulo`:
+  `opening_hours` is a map keyed by weekday, with intervals in minutes since
+  midnight, in the `America/Sao_Paulo` timezone:
 
       %{"mon" => [[660, 1320]], "sat" => [[660, 780], [1080, 1380]]}
 
-  Dias ausentes ou `[]` = fechado. "Pausado hoje" sobrepõe o horário.
+  Missing days or `[]` = closed. "Pausado hoje" overrides the schedule.
   """
 
   @timezone "America/Sao_Paulo"
@@ -19,7 +19,7 @@ defmodule Freguesia.Catalog.OpeningHours do
           | {:paused}
 
   @doc """
-  Devolve o estado do lugar no instante `now`.
+  Returns the place's status at the instant `now`.
 
       iex> hours = %{"mon" => [[660, 1320]]}
       iex> Freguesia.Catalog.OpeningHours.status(hours, nil, ~U[2026-10-12 15:00:00Z])
@@ -53,8 +53,8 @@ defmodule Freguesia.Catalog.OpeningHours do
     Map.get(hours, key, [])
   end
 
-  # Próxima abertura: primeiro intervalo de hoje que ainda não começou, ou o
-  # primeiro intervalo dos próximos 7 dias.
+  # Next opening: the first interval of today that has not started yet, or the
+  # first interval of the next 7 days.
   defp next_opening(hours, local, minute) do
     today = DateTime.to_date(local)
 

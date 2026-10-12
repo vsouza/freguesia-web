@@ -1,7 +1,7 @@
 defmodule FreguesiaWeb.Admin.VerificationLive do
   @moduledoc """
-  Análise de um pedido: checagens automáticas, prévia do card e as três decisões
-  (aprovar, pedir ajuste, recusar). Abrir o pedido já o coloca em análise.
+  Review of a request: automatic checks, card preview and the three decisions
+  (approve, request adjustments, reject). Opening the request already puts it under review.
   """
   use FreguesiaWeb, :live_view
 

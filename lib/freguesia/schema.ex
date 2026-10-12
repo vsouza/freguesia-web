@@ -1,7 +1,7 @@
 defmodule Freguesia.Schema do
   @moduledoc """
-  Base dos schemas do domínio: PK UUIDv7 (PRD §9) e timestamps em UTC, sem
-  frações de segundo.
+  Base for the domain schemas: UUIDv7 primary keys (PRD §9) and UTC timestamps, without
+  sub-second fractions.
 
       use Freguesia.Schema
   """

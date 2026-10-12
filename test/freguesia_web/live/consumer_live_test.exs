@@ -7,8 +7,8 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
   alias Freguesia.{Fixtures, Repo}
   alias Freguesia.Messaging.Fake
 
-  describe "home do bairro (/bairro/:slug)" do
-    test "lista os lugares verificados e não lista os pendentes", %{conn: conn} do
+  describe "neighborhood home (/bairro/:slug)" do
+    test "lists verified places and does not list pending ones", %{conn: conn} do
       neighborhood = Fixtures.neighborhood()
       verified = Fixtures.verified_place(%{name: "Pizzaria Visível", neighborhood: neighborhood})
       pending = Fixtures.verified_place(%{name: "Pizzaria Oculta", neighborhood: neighborhood})
@@ -20,7 +20,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       refute render(view) =~ "Pizzaria Oculta"
     end
 
-    test "mostra o selo Verificado e a etiqueta da oferta quando há oferta com resumo", %{
+    test "shows the Verified badge and the offer tag when there is an offer summary", %{
       conn: conn
     } do
       neighborhood = Fixtures.neighborhood()
@@ -38,11 +38,11 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
 
       assert has_element?(view, "#place-card-#{place.slug}", "Verificado")
       assert has_element?(view, "#place-card-#{place.slug}", "10% off")
-      # O texto completo da oferta não vai ao card (regra 4)
+      # The full offer text does not go to the card (rule 4)
       refute has_element?(view, "#place-card-#{place.slug}", "10% no pedido direto")
     end
 
-    test "bairro sem lugares mostra o estado vazio", %{conn: conn} do
+    test "neighborhood without places shows the empty state", %{conn: conn} do
       Fixtures.neighborhood()
       {:ok, view, html} = live(conn, ~p"/bairro/savassi")
 
@@ -50,34 +50,28 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       assert has_element?(view, "#places")
     end
 
-    test "bairro inexistente cai na Savassi", %{conn: conn} do
+    test "unknown neighborhood falls back to Savassi", %{conn: conn} do
       assert {:error, {:live_redirect, %{to: "/bairro/savassi"}}} =
                live(conn, ~p"/bairro/nao-existe")
     end
 
-    test "a inicial redireciona para o bairro padrão", %{conn: conn} do
+    test "the home redirects to the default neighborhood", %{conn: conn} do
       assert redirected_to(get(conn, ~p"/")) == "/bairro/savassi"
     end
   end
 
-  describe "detalhes do lugar (/lugar/:slug)" do
-    test "lugar verificado mostra o botão de WhatsApp com número e mensagem padrão", %{conn: conn} do
+  describe "place details (/lugar/:slug)" do
+    test "verified place shows the WhatsApp button that goes through the opening record", %{
+      conn: conn
+    } do
       place = Fixtures.verified_place(%{name: "Pizza do Lago", whatsapp_e164: "+5531977776666"})
 
       {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
 
-      assert has_element?(view, "#whatsapp-cta")
-      html = view |> element("#whatsapp-cta") |> render()
-      assert html =~ "https://wa.me/5531977776666?text="
-
-      assert html =~
-               URI.encode(
-                 "Oi! Vi o Pizza do Lago na Freguesia e quero pedir direto.",
-                 &URI.char_unreserved?/1
-               )
+      assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}']")
     end
 
-    test "lugar pausado mostra o estado e não oferece o botão de pedido", %{conn: conn} do
+    test "paused place shows its status and offers no order button", %{conn: conn} do
       place = Fixtures.verified_place(%{name: "Pausado"})
 
       Repo.update_all(from_place(place),
@@ -89,7 +83,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       refute has_element?(view, "a#whatsapp-cta")
     end
 
-    test "lugar que não está no catálogo volta para o bairro", %{conn: conn} do
+    test "place not in the catalog goes back to the neighborhood", %{conn: conn} do
       place = Fixtures.verified_place(%{name: "Pendente Escondido"})
       Repo.update_all(from_place(place), set: [status: :pending])
 
@@ -98,8 +92,8 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
     end
   end
 
-  describe "cadastro em 3 passos (/cadastrar)" do
-    test "fluxo completo: dados, código no WhatsApp, confirmação e tela de sucesso", %{conn: conn} do
+  describe "3-step signup (/cadastrar)" do
+    test "full flow: data, WhatsApp code, confirmation and success screen", %{conn: conn} do
       segment = Fixtures.restaurants()
       Fixtures.category()
       Fixtures.neighborhood()
@@ -107,7 +101,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       {:ok, view, html} = live(conn, ~p"/cadastrar")
       assert html =~ "Passo 1 de 3"
 
-      # Tipo restaurante mostra o campo de tipo de comida
+      # Restaurant type shows the cuisine type field
       refute has_element?(view, "#signup-form select[name='signup[category_id]']")
 
       view
@@ -136,13 +130,13 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       assert render(view) =~ "Em análise, até 1 dia útil"
     end
 
-    test "erros de validação aparecem no formulário", %{conn: conn} do
+    test "validation errors appear on the form", %{conn: conn} do
       segment = Fixtures.restaurants()
       Fixtures.category()
       Fixtures.neighborhood()
       {:ok, view, _html} = live(conn, ~p"/cadastrar")
 
-      # Como no uso real: escolhe o tipo antes, para o campo de comida aparecer
+      # As in real use: picks the type first, so the cuisine field appears
       view
       |> element("#signup-form")
       |> render_change(%{"signup" => %{"segment_id" => segment.id}})

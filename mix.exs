@@ -12,7 +12,7 @@ defmodule Freguesia.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      # PRD §14: cobertura mínima de 80% nos contextos
+      # PRD §14: minimum 80% coverage in the contexts
       test_coverage: [summary: [threshold: 80]]
     ]
   end

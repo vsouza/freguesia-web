@@ -4,7 +4,7 @@ defmodule Freguesia.Repo.Migrations.CreatePlaces do
   @statuses "'pending','needs_changes','rejected','verified','paused','hidden','removed'"
 
   def change do
-    # Busca sem acento: unaccent não é IMMUTABLE, então o índice usa este wrapper.
+    # Accent-insensitive search: unaccent is not IMMUTABLE, so the index uses this wrapper.
     execute(
       """
       CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text
@@ -82,7 +82,7 @@ defmodule Freguesia.Repo.Migrations.CreatePlaces do
            )
 
     create index(:offers, [:place_id])
-    # Uma oferta aprovada (ativa) por lugar; o histórico fica nas demais linhas.
+    # One approved (active) offer per place; history stays in the other rows.
     create unique_index(:offers, [:place_id],
              where: "status = 'approved'",
              name: :offers_one_approved_per_place

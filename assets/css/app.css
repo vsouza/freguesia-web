@@ -1,7 +1,7 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-/* Urbanist (PRD §12): 300 itálico + 400–900 normal, com font-display: swap */
+/* Urbanist (PRD §12): 300 italic + 400–900 regular, with font-display: swap */
 @import url("https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400..900;1,300&display=swap");
 
 @import "tailwindcss" source(none);
@@ -14,9 +14,9 @@
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
 
-/* Design system da Freguesia (PRD §12).
-   A paleta padrão do Tailwind é desligada: só os tokens abaixo existem,
-   então nenhum hex solto entra nos componentes. */
+/* Freguesia design system (PRD §12).
+   The default Tailwind palette is turned off: only the tokens below exist,
+   so no loose hex value gets into the components. */
 @theme {
   --color-*: initial;
 
@@ -35,8 +35,8 @@
   --color-saffron-800: #7a4f08;
   --color-saffron-100: #faebc6;
 
-  /* Mapa de cor por categoria (PRD §12). Cada família tem top, tint e accent.
-     Classes completas aqui para o Tailwind gerar todas; nunca montar por concatenação. */
+  /* Color map per category (PRD §12). Each family has top, tint and accent.
+     Full class names live here so Tailwind generates all of them; never build them by concatenation. */
   --color-pessego-top: #fbddb8;
   --color-pessego-tint: #fbf3e3;
   --color-pessego-accent: #c8441a;

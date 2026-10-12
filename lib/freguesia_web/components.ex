@@ -1,7 +1,7 @@
 defmodule FreguesiaWeb.Components do
   @moduledoc """
-  Componentes do design da Freguesia (PRD §12). Ficam separados de `CoreComponents`,
-  que são o básico do Phoenix (formulários, botões, tabelas).
+  Freguesia design components (PRD §12). Kept separate from `CoreComponents`,
+  which are the Phoenix basics (forms, buttons, tables).
   """
   use Phoenix.Component
   use FreguesiaWeb, :verified_routes
@@ -9,14 +9,15 @@ defmodule FreguesiaWeb.Components do
   import FreguesiaWeb.CoreComponents, only: [icon: 1]
 
   alias Freguesia.Catalog.ColorMap
+  alias Freguesia.Reports.{Savings, Stats}
 
   @doc """
-  Card de um lugar na lista do bairro.
+  Card for a place in the neighborhood list.
 
-  Três estados (PRD §5):
-    * verificado: fundo da categoria, selo, etiqueta da oferta se houver
-    * não verificado: fundo `sand`, sem oferta, sem economia
-    * fechado: o status "Fechado · abre às…" aparece no lugar do "Aberto"
+  Three states (PRD §5):
+    * verified: category background, badge, offer tag if any
+    * unverified: `sand` background, no offer, no savings
+    * closed: the status "Fechado · abre às…" shows in place of "Aberto"
   """
   attr :place, :any, required: true
   attr :class, :any, default: nil
@@ -25,9 +26,17 @@ defmodule FreguesiaWeb.Components do
     place = assigns.place
     verified? = place.status == :verified
     colors = if verified?, do: category_colors(place), else: ColorMap.neutral()
-    # Regra 4 (PRD §4): no card só o resumo da oferta; sem resumo, nada aparece.
+    # Rule 4 (PRD §4): the card only shows the offer summary; without one, nothing is shown.
     offer = if verified?, do: Freguesia.Catalog.active_offer(place)
-    assigns = assign(assigns, verified?: verified?, colors: colors, offer: offer)
+
+    assigns =
+      assign(assigns,
+        verified?: verified?,
+        colors: colors,
+        offer: offer,
+        funcionou_text: funcionou_chip(place),
+        economia_text: savings_chip(place)
+      )
 
     ~H"""
     <.link
@@ -58,12 +67,29 @@ defmodule FreguesiaWeb.Components do
 
       <.not_verified_note :if={!@verified?} />
 
+      <div :if={@verified? and is_list(@place.stats)} class="flex flex-wrap gap-2">
+        <.proof_chip :if={@funcionou_text} text={@funcionou_text} />
+        <.proof_chip :if={@economia_text} text={@economia_text} />
+      </div>
+
       <.offer_tag :if={@offer && @offer.tag} text={@offer.tag} />
     </.link>
     """
   end
 
-  @doc "Selo Verificado. Único elemento em índigo (PRD §12)."
+  @doc """
+  Proof that ordering directly works: "Funcionou 31/33". Only shows with at least
+  1 answer in 30 days (PRD §8).
+  """
+  attr :text, :string, required: true
+
+  def proof_chip(assigns) do
+    ~H"""
+    <span class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-bold text-ink-2">{@text}</span>
+    """
+  end
+
+  @doc "Verified badge. The only element in indigo (PRD §12)."
   def verified_badge(assigns) do
     ~H"""
     <span class="inline-flex flex-none items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-800">
@@ -73,7 +99,7 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Etiqueta inclinada com o resumo da oferta (regra 4: no card só o resumo).
+  Slanted tag with the offer summary (rule 4: only the summary on the card).
   """
   attr :text, :string, required: true
 
@@ -86,7 +112,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Estado de horário: aberto, fechado, pausado (PRD §8)."
+  @doc "Opening state: open, closed, paused (PRD §8)."
   attr :status, :any, required: true
 
   def hours_label(assigns) do
@@ -112,7 +138,110 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Aviso em caixa de atenção (cor saffron)."
+  @doc """
+  Bottom sheet (WhatsApp return, PRD §5). No dark backdrop: focus stays on it.
+  """
+  attr :id, :string, required: true
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  def bottom_sheet(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={"#{@id}-title"}
+      class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-sheet bg-white p-6 shadow-nav md:max-w-xl"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-line" aria-hidden="true"></div>
+      <h2 id={"#{@id}-title"} class="text-lg font-extrabold text-ink">{@title}</h2>
+      <div class="mt-4">{render_slot(@inner_block)}</div>
+    </div>
+    """
+  end
+
+  @doc """
+  Histogram of the five savings bands (PRD §8). The average band is highlighted.
+  """
+  attr :hist, :map, required: true
+  attr :avg, :any, required: true
+
+  def savings_histogram(assigns) do
+    total = assigns.hist |> Map.values() |> Enum.sum() |> max(1)
+    highlight = Savings.band_for_average(assigns.avg && Decimal.to_float(assigns.avg))
+
+    assigns =
+      assign(assigns,
+        total: total,
+        highlight: highlight,
+        bands: Savings.bands()
+      )
+
+    ~H"""
+    <figure
+      role="img"
+      aria-label={"Distribuição da economia relatada. Faixa da média: #{Savings.label(@highlight)}."}
+    >
+      <ul class="flex flex-col gap-2">
+        <li
+          :for={{key, _mid, label} <- @bands}
+          class="grid grid-cols-[7rem_1fr_2.5rem] items-center gap-3 text-xs"
+        >
+          <span class={[
+            "font-semibold",
+            key == @highlight && "text-ink",
+            key != @highlight && "text-muted"
+          ]}>
+            {label}
+          </span>
+          <span class="h-2 overflow-hidden rounded-full bg-sand">
+            <span
+              class={[
+                "block h-full rounded-full",
+                key == @highlight && "bg-ink",
+                key != @highlight && "bg-line"
+              ]}
+              style={"width: #{percent(Map.get(@hist, key, 0), @total)}%"}
+            >
+            </span>
+          </span>
+          <span class="text-right font-semibold text-ink-2">{Map.get(@hist, key, 0)}</span>
+        </li>
+      </ul>
+    </figure>
+    """
+  end
+
+  @doc """
+  "Funcionou X/Y em 30 dias". Bar only shows with 5 or more answers (PRD §8).
+  """
+  attr :worked, :integer, required: true
+  attr :responses, :integer, required: true
+
+  def funcionou_bar(assigns) do
+    ~H"""
+    <div>
+      <p class="text-sm font-bold text-ink">
+        <%= if @responses == 0 do %>
+          Ainda sem respostas nos últimos 30 dias
+        <% else %>
+          Funcionou {@worked}/{@responses} em 30 dias
+        <% end %>
+      </p>
+      <div
+        :if={@responses >= 5}
+        class="mt-2 h-2 overflow-hidden rounded-full bg-sand"
+        aria-hidden="true"
+      >
+        <div class="h-full rounded-full bg-ink" style={"width: #{percent(@worked, @responses)}%"}>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc "Warning in an attention box (saffron color)."
   attr :class, :any, default: nil
   slot :inner_block, required: true
 
@@ -125,7 +254,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Estado vazio com uma ação opcional."
+  @doc "Empty state with an optional action."
   attr :title, :string, required: true
   attr :class, :any, default: nil
   slot :inner_block
@@ -141,7 +270,7 @@ defmodule FreguesiaWeb.Components do
     """
   end
 
-  @doc "Título em dois tempos (PRD §12): linha 1 itálico 300, linha 2 negrito 800."
+  @doc "Two-part title (PRD §12): line 1 italic 300, line 2 bold 800."
   attr :first, :string, required: true
   attr :second, :string, required: true
 
@@ -155,8 +284,8 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  QR code em SVG. O SVG vem de `EQRCode` a partir da URI do TOTP, nunca de entrada
-  do usuário, por isso é seguro inseri-lo sem escape.
+  QR code in SVG. The SVG comes from `EQRCode` based on the TOTP URI, never from user input,
+  so it is safe to insert it without escaping.
   """
   attr :svg, :string, required: true
 
@@ -168,14 +297,35 @@ defmodule FreguesiaWeb.Components do
   end
 
   @doc """
-  Link para o WhatsApp com a mensagem padrão (PRD §11). O número vem em E.164
-  e o `wa.me` pede só os dígitos.
+  WhatsApp link with the default message (PRD §11). The number comes in E.164
+  and `wa.me` only takes the digits.
   """
   def whatsapp_url(place_name, whatsapp_e164) do
     digits = String.trim_leading(whatsapp_e164, "+")
     text = "Oi! Vi o #{place_name} na Freguesia e quero pedir direto."
     "https://wa.me/#{digits}?text=#{URI.encode(text, &URI.char_unreserved?/1)}"
   end
+
+  defp funcionou_chip(place) do
+    if is_list(place.stats) do
+      stat = Stats.window(place, "30d")
+      if stat.responses >= 1, do: "Funcionou #{stat.worked}/#{stat.responses}"
+    end
+  end
+
+  defp savings_chip(place) do
+    if is_list(place.stats) do
+      stat = Stats.window(place, "90d")
+      n = stat.savings_hist |> Map.values() |> Enum.sum()
+      if n >= 10, do: "Economia média #{round_avg(stat.savings_avg)}%"
+    end
+  end
+
+  defp round_avg(nil), do: 0
+  defp round_avg(avg), do: avg |> Decimal.round(0) |> Decimal.to_integer()
+
+  defp percent(_part, 0), do: 0
+  defp percent(part, total), do: round(part * 100 / total)
 
   defp category_colors(%{category: %{color_key: key}}) when is_binary(key),
     do: ColorMap.for_key(key)

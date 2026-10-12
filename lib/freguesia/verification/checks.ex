@@ -1,21 +1,21 @@
 defmodule Freguesia.Verification.Checks do
   @moduledoc """
-  As quatro checagens automáticas da fila (PRD §7).
+  The four automatic checks on the queue (PRD §7).
 
-    * `code`: o código do WhatsApp foi confirmado
-    * `profile_name`: o nome do perfil WhatsApp Business bate com o informado
-      (similaridade ≥ 0,8). `pending` enquanto o perfil não for lido.
-    * `in_pilot`: o bairro do negócio está no piloto
-    * `no_reports`: não há denúncia aberta
+    * `code`: the WhatsApp code was confirmed
+    * `profile_name`: the WhatsApp Business profile name matches the one provided
+      (similarity ≥ 0.8). `pending` until the profile is read.
+    * `in_pilot`: the business neighborhood is in the pilot
+    * `no_reports`: there are no open complaints
 
-  Valores: `"ok"`, `"fail"` ou `"pending"`.
+  Values: `"ok"`, `"fail"` or `"pending"`.
   """
 
   alias Freguesia.Catalog.{Place, Text}
 
   @similarity_threshold 0.8
 
-  @doc "Avalia o lugar. `open_complaints?` vem do contexto, para manter esta função pura."
+  @doc "Evaluates the place. `open_complaints?` comes from the context, to keep this function pure."
   @spec evaluate(Place.t(), boolean()) :: %{String.t() => String.t()}
   def evaluate(%Place{} = place, open_complaints?) do
     %{
@@ -26,12 +26,12 @@ defmodule Freguesia.Verification.Checks do
     }
   end
 
-  @doc "Todas as checagens passaram."
+  @doc "All checks passed."
   def all_ok?(checks) when is_map(checks) do
     checks != %{} and Enum.all?(Map.values(checks), &(&1 == "ok"))
   end
 
-  @doc "Similaridade de nomes em [0, 1], usada na checagem do perfil."
+  @doc "Name similarity in [0, 1], used in the profile check."
   def similarity(a, b) do
     String.jaro_distance(Text.normalize(a), Text.normalize(b))
   end

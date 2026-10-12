@@ -3,8 +3,8 @@ defmodule FreguesiaWeb.Router do
 
   import FreguesiaWeb.AdminAuth, only: [fetch_current_operator: 2, require_operator: 2]
 
-  # PRD §13: scripts próprios, Google Fonts (AdSense entra na fase 2).
-  # LiveView usa estilo inline nos comandos JS, por isso 'unsafe-inline' em style-src.
+  # PRD §13: own scripts and Google Fonts (AdSense comes in phase 2).
+  # LiveView uses inline styles in its JS commands, hence 'unsafe-inline' in style-src.
   @content_security_policy Enum.join(
                              [
                                "default-src 'self'",
@@ -25,6 +25,7 @@ defmodule FreguesiaWeb.Router do
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {FreguesiaWeb.Layouts, :root}
+    plug FreguesiaWeb.DeviceSession
     plug :protect_from_forgery
 
     plug :put_secure_browser_headers, %{
@@ -41,7 +42,7 @@ defmodule FreguesiaWeb.Router do
     plug :require_operator
   end
 
-  # Liveness para o deploy: sem sessão, sem CSRF.
+  # Liveness probe for deploys: no session, no CSRF.
   scope "/", FreguesiaWeb do
     get "/health", HealthController, :index
   end
@@ -50,6 +51,7 @@ defmodule FreguesiaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/r/:slug", WhatsAppController, :open
 
     live_session :catalog do
       live "/bairro/:slug", NeighborhoodLive
@@ -78,8 +80,8 @@ defmodule FreguesiaWeb.Router do
       on_mount: [{FreguesiaWeb.AdminAuth, :require_operator}] do
       live "/verificacoes", VerificationsLive
       live "/verificacoes/:id", VerificationLive
-      # Caixa do Fake: é onde o código de verificação aparece em dev e em staging.
-      # Fica atrás do login, porque em staging ela mostra códigos reais de teste.
+      # Fake inbox: where the verification code shows up in dev and staging.
+      # Behind login, because in staging it shows real test codes.
       live "/mensagens-fake", FakeInboxLive
     end
   end

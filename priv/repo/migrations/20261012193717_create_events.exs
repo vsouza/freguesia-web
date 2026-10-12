@@ -1,9 +1,9 @@
 defmodule Freguesia.Repo.Migrations.CreateEvents do
   use Ecto.Migration
 
-  # Analytics próprio, particionado por mês (PRD §9).
-  # A partição DEFAULT evita erro de insert em mês sem partição; um job mensal
-  # (fase 1) cria as próximas partições.
+  # Own analytics, partitioned by month (PRD §9).
+  # The DEFAULT partition prevents insert errors in a month without a partition; a monthly job
+  # (phase 1) creates the next partitions.
   def up do
     execute """
     CREATE TABLE events (

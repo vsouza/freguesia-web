@@ -5,7 +5,7 @@ defmodule Freguesia.Repo.Migrations.CreateVerification do
     create table(:verification_codes, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :place_id, references(:places, type: :binary_id, on_delete: :delete_all), null: false
-      # Código nunca em texto puro: só o hash.
+      # Code never in plain text: only the hash.
       add :code_hash, :binary, null: false
       add :expires_at, :utc_datetime, null: false
       add :attempts, :integer, null: false, default: 0

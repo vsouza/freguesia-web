@@ -1,5 +1,5 @@
 defmodule Freguesia.Catalog.City do
-  @moduledoc "Cidade do catálogo. No piloto, só Belo Horizonte (PRD §9)."
+  @moduledoc "Catalog city. In the pilot, only Belo Horizonte (PRD §9)."
 
   use Freguesia.Schema
 

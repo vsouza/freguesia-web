@@ -1,6 +1,6 @@
 defmodule Freguesia.Admin.AuditEntry do
   @moduledoc """
-  Linha do `audit_log`. Imutável: um trigger no Postgres bloqueia UPDATE e DELETE.
+  `audit_log` row. Immutable: a Postgres trigger blocks UPDATE and DELETE.
   """
   use Freguesia.Schema
 

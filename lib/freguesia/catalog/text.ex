@@ -1,12 +1,12 @@
 defmodule Freguesia.Catalog.Text do
   @moduledoc """
-  Normalização de nomes para busca e slugs (PRD §5, Buscar).
+  Name normalization for search and slugs (PRD §5, Search).
 
-  Mesma regra da busca da home: sem acento, minúsculas, `&` vira `e`.
+  Same rule as the home search: no accents, lowercase, `&` becomes `e`.
   """
 
   @doc """
-  Devolve o nome em forma comparável.
+  Returns the name in a comparable form.
 
       iex> Freguesia.Catalog.Text.normalize("Pizzaria & Padaria Açaí")
       "pizzaria e padaria acai"
@@ -22,7 +22,7 @@ defmodule Freguesia.Catalog.Text do
   end
 
   @doc """
-  Gera um slug de URL a partir do nome.
+  Generates a URL slug from the name.
 
       iex> Freguesia.Catalog.Text.slugify("Pizzaria & Padaria Açaí!")
       "pizzaria-e-padaria-acai"

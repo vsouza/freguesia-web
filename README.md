@@ -1,28 +1,29 @@
 # Freguesia
 
-Catálogo web (PWA) de números de WhatsApp verificados de restaurantes e comércios de Belo Horizonte. A especificação completa está em `PRD — Freguesia.md`.
+A web catalog (PWA) of verified WhatsApp numbers for restaurants and local businesses in Belo Horizonte. The full product spec is in `PRD — Freguesia.md` (in Portuguese, the product language).
 
-Esta é a fase 0 (fundação). Ela cobre o fluxo cadastro → código → aprovação → card no ar, que é o portão G1 do PRD.
+Current status: phase 0 (foundation) is done and phase 1 is in progress. Phase 1 starts with the WhatsApp loop: the customer clicks "order on WhatsApp", the opening is recorded, a return sheet asks whether the order worked, and the answers feed the savings and success figures.
 
-## Rodar localmente
+## Run locally
 
-Pré-requisitos: Elixir 1.19 / OTP 28, Docker.
+Requirements: Elixir 1.19 / OTP 28 and Docker.
 
 ```sh
-docker compose up -d          # Postgres 16 + PostGIS na porta 5433
-mix setup                     # deps, banco, migrações, seeds e assets
+docker compose up -d          # Postgres 16 + PostGIS on port 5433
+mix setup                     # deps, database, migrations, seeds and assets
 mix phx.server                # http://localhost:4000
 ```
 
-Se a porta 5433 estiver ocupada, use `POSTGRES_PORT=<porta>` (vale para dev e test).
+If port 5433 is taken, set `POSTGRES_PORT=<port>` (it applies to dev and test).
 
-### Como testar o fluxo
+### Walk through the flows
 
-1. Freguês: `/cadastrar` → preencha o formulário → o código aparece em **`/admin/mensagens-fake`** (fake do WhatsApp).
-2. Backoffice: `/admin/entrar` com `admin@freguesia.local` / `senha-dev-freguesia-2026`. No primeiro login, cadastre o app autenticador (2FA é obrigatório).
-3. Em `/admin/verificacoes`, abra o pedido, aprove e confira o card em `/bairro/savassi`.
+1. Customer signup: open `/cadastrar`, fill in the form, and read the WhatsApp code in `/admin/mensagens-fake` (the fake WhatsApp inbox).
+2. Backoffice: sign in at `/admin/entrar` with `admin@freguesia.local` / `senha-dev-freguesia-2026`. On the first login, set up the authenticator app (2FA is required).
+3. In `/admin/verificacoes`, open a request, approve it, and check the card at `/bairro/savassi`.
+4. WhatsApp loop: open a place, click "Pedir no WhatsApp" (it opens in a new tab), then go back to the first tab. The return sheet asks whether the order worked.
 
-## Checagens (o mesmo que o CI roda)
+## Checks (same as CI)
 
 ```sh
 mix format --check-formatted
@@ -30,20 +31,20 @@ mix compile --warnings-as-errors
 mix credo --strict
 mix sobelow --exit medium
 mix dialyzer
-mix test --cover              # limite de cobertura: 80%
+mix test --cover              # coverage threshold: 80%
 ```
 
-## Estrutura
+## Structure
 
-- `lib/freguesia/` — domínio: `Catalog` (bairros, lugares, horário), `Verification` (cadastro, código, fila, decisões), `Admin` (operadores, 2FA, `audit_log`), `Messaging` (WhatsApp, com adaptador `Fake` em dev/staging).
-- `lib/freguesia_web/` — telas: home do bairro, detalhes, cadastro em 3 passos; backoffice em `/admin`.
-- `priv/repo/migrations/` — schema da seção 9 do PRD.
-- `test/` — domínio, LiveViews e o teste de ponta a ponta do G1 (`test/freguesia_web/g1_test.exs`).
+- `lib/freguesia/`: domain. `Catalog` (neighborhoods, places, opening hours), `Verification` (signup, code, queue, decisions), `Reports` (openings, answers, complaints, antifraud, stats), `Admin` (operators, 2FA, `audit_log`), `Messaging` (WhatsApp; the `Fake` adapter is used in dev and staging), `Events` (product analytics).
+- `lib/freguesia_web/`: screens. Neighborhood home, place details, 3-step signup, and the backoffice under `/admin`.
+- `priv/repo/migrations/`: the schema from section 9 of the PRD, plus later additions.
+- `test/`: domain, LiveView and end-to-end tests, including the G1 flow in `test/freguesia_web/g1_test.exs`.
 
-## Pendências conhecidas da fase 0
+## Known gaps
 
-- Adaptador real do WhatsApp (`Messaging.Cloud`) e a conta da Meta: fase 1. Staging usa o fake.
-- Staging no Fly ainda não existe: `fly.toml` descreve, mas o app não foi criado.
-- Rate limit (código por IP, login do backoffice) e edição do restaurante pelo link: fase 1.
-- Polígonos dos bairros nas seeds são aproximados, só para dev.
-- Nomes dos 6 lugares das seeds são provisórios; trocar pelos do canvas.
+- The real WhatsApp adapter (`Messaging.Cloud`) and the Meta templates are not done yet. Staging uses the fake adapter.
+- The Fly staging app does not exist yet. `fly.toml` describes it but nothing has been deployed.
+- Rate limits (verification code per IP, backoffice login) are not implemented.
+- The neighborhood polygons in the seeds are approximate and only for development.
+- The six places in the seeds are placeholders.

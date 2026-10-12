@@ -9,7 +9,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
 
   defp login_path, do: ~p"/admin/entrar"
 
-  # Operador com 2FA já cadastrado: pula o enrolamento e faz o login completo.
+  # Operator with 2FA already set up: skips enrollment and logs in fully.
   defp logged_in_conn(conn) do
     operator = Fixtures.operator()
     {:ok, operator, _uri} = Admin.start_totp_enrollment(operator)
@@ -48,7 +48,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
   end
 
   describe "login" do
-    test "senha errada volta ao formulário com erro", %{conn: conn} do
+    test "wrong password returns to the form with an error", %{conn: conn} do
       operator = Fixtures.operator()
 
       conn =
@@ -60,7 +60,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert get_session(conn, :operator_id) == nil
     end
 
-    test "sem 2FA cadastrado, o primeiro login vai para o enrolamento com QR e chave", %{
+    test "without 2FA set up, the first login goes to enrollment with QR and key", %{
       conn: conn
     } do
       operator = Fixtures.operator()
@@ -77,7 +77,9 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert html =~ "totp-secret"
     end
 
-    test "código de enrolamento errado não entra; o certo confirma e entra", %{conn: conn} do
+    test "wrong enrollment code does not log in; the right one confirms and logs in", %{
+      conn: conn
+    } do
       operator = Fixtures.operator()
 
       conn =
@@ -102,12 +104,12 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert Repo.get!(Operator, operator.id).totp_confirmed_at
     end
 
-    test "fila é protegida: sem login, redireciona para o formulário", %{conn: conn} do
+    test "queue is protected: without login, redirects to the login form", %{conn: conn} do
       assert redirected_to(get(conn, ~p"/admin/verificacoes")) == login_path()
       assert {:error, {:redirect, %{to: "/admin/entrar"}}} = live(conn, ~p"/admin/verificacoes")
     end
 
-    test "logout encerra a sessão", %{conn: conn} do
+    test "logout ends the session", %{conn: conn} do
       {conn, _operator} = logged_in_conn(conn)
 
       conn = delete(conn, ~p"/admin/sair")
@@ -117,8 +119,8 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     end
   end
 
-  describe "fila e decisões" do
-    test "lista o pedido pendente e abre a análise", %{conn: conn} do
+  describe "queue and decisions" do
+    test "lists the pending request and opens the review", %{conn: conn} do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
 
@@ -130,11 +132,13 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert has_element?(detail, "#check-code")
       assert has_element?(detail, "#check-in_pilot")
 
-      # Abrir o pedido já o coloca em análise
+      # Opening the request already puts it under review
       assert Repo.get!(Freguesia.Verification.Request, request.id).status == :in_review
     end
 
-    test "aprovar sem nota quando o nome do perfil não foi lido mostra o motivo", %{conn: conn} do
+    test "approving without a note when the profile name was not read shows the reason", %{
+      conn: conn
+    } do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
       {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
@@ -144,7 +148,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert Repo.get!(Freguesia.Verification.Request, request.id).status == :in_review
     end
 
-    test "aprovar com nota publica o lugar e volta para a fila", %{conn: conn} do
+    test "approving with a note publishes the place and goes back to the queue", %{conn: conn} do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
       {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
@@ -159,7 +163,9 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert Repo.get!(Freguesia.Verification.Request, request.id).status == :approved
     end
 
-    test "pedir ajuste sem motivo não envia nada; com motivo, envia", %{conn: conn} do
+    test "requesting an adjustment without a reason sends nothing; with a reason, it sends", %{
+      conn: conn
+    } do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
       {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
@@ -175,7 +181,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert Repo.get!(Freguesia.Verification.Request, request.id).status == :needs_changes
     end
 
-    test "recusar exige motivo", %{conn: conn} do
+    test "rejecting requires a reason", %{conn: conn} do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
       {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
@@ -190,7 +196,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       assert Repo.get!(Freguesia.Verification.Request, request.id).status == :rejected
     end
 
-    test "pedido inexistente volta para a fila", %{conn: conn} do
+    test "nonexistent request goes back to the queue", %{conn: conn} do
       {conn, _operator} = logged_in_conn(conn)
 
       assert {:error, {:live_redirect, %{to: "/admin/verificacoes"}}} =

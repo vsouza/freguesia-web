@@ -1,9 +1,9 @@
 defmodule Freguesia.Admin.Operator do
   @moduledoc """
-  Operador do backoffice (tabela `admins`, PRD §9 e §7).
+  Backoffice operator (`admins` table, PRD §9 and §7).
 
-  Login com e-mail e senha (Argon2), seguido de TOTP. O 2FA é obrigatório:
-  `totp_confirmed_at` nil significa que o operador ainda precisa cadastrar o app.
+  Login with email and password (Argon2), followed by TOTP. 2FA is mandatory:
+  `totp_confirmed_at` nil means the operator still needs to register the app.
   """
   use Freguesia.Schema
 
@@ -20,7 +20,7 @@ defmodule Freguesia.Admin.Operator do
     timestamps()
   end
 
-  @doc "Changeset de criação: valida e grava o hash da senha."
+  @doc "Creation changeset: validates and stores the password hash."
   def create_changeset(operator, attrs) do
     operator
     |> cast(attrs, [:email, :password, :role])

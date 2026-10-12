@@ -10,21 +10,28 @@ import Config
 config :freguesia,
   ecto_repos: [Freguesia.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true],
-  # Adaptador do WhatsApp Cloud API. Em dev e teste é o Fake (ver Freguesia.Messaging).
+  # WhatsApp Cloud API adapter. Dev and test use the Fake (see Freguesia.Messaging).
   messaging: Freguesia.Messaging.Fake
 
-# Endereço público, usado nos links das mensagens (ex.: página do lugar)
+# Public address, used in message links (e.g. the place page)
 config :freguesia, :public_url, "http://localhost:4000"
 
-# Horário de funcionamento é calculado em America/Sao_Paulo (PRD §6 e §8)
+# Opening hours are computed in America/Sao_Paulo (PRD §6 and §8)
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
-# Jobs em fila no próprio Postgres (PRD §10)
+# Job queue stored in Postgres itself (PRD §10)
 config :freguesia, Oban,
   engine: Oban.Engines.Basic,
   repo: Freguesia.Repo,
-  queues: [messaging: 5],
-  plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
+  queues: [messaging: 5, default: 2],
+  plugins: [
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"*/15 * * * *", Freguesia.Workers.ComputePlaceStats},
+       {"0 3 * * *", Freguesia.Workers.PurgeIpHashes}
+     ]}
+  ]
 
 # Configure the endpoint
 config :freguesia, FreguesiaWeb.Endpoint,

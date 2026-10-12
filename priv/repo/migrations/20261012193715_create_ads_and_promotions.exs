@@ -10,7 +10,7 @@ defmodule Freguesia.Repo.Migrations.CreateAdsAndPromotions do
       add :starts_at, :utc_datetime
       add :ends_at, :utc_datetime
       add :status, :string, null: false, default: "pending"
-      # Fase 2 e 3: paid só vira true quando a cobrança existir.
+      # Phases 2 and 3: paid only becomes true once billing exists.
       add :paid, :boolean, null: false, default: false
       add :amount_cents, :integer
 

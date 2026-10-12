@@ -1,8 +1,8 @@
-# Staging da Freguesia no Fly.io (região São Paulo, PRD §15).
-# Este arquivo só descreve a configuração. O app ainda não existe na Fly:
-# criar o app e o Postgres custa dinheiro, então é um passo manual e confirmado.
+# Freguesia staging on Fly.io (São Paulo region, PRD §15).
+# This file only describes the configuration. The app does not exist on Fly yet:
+# creating the app and Postgres costs money, so it is a manual, confirmed step.
 #
-# Segredos a definir antes do primeiro deploy:
+# Secrets to set before the first deploy:
 #   fly secrets set DATABASE_URL=... SECRET_KEY_BASE=...
 
 app = "freguesia-staging"

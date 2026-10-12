@@ -1,5 +1,5 @@
 defmodule Freguesia.Catalog.PlaceCoverage do
-  @moduledoc "Bairros atendidos por um lugar, além do bairro dele (N:N, PRD §9)."
+  @moduledoc "Neighborhoods served by a place, besides its own (N:N, PRD §9)."
 
   use Freguesia.Schema
 

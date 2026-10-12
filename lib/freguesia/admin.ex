@@ -1,10 +1,10 @@
 defmodule Freguesia.Admin do
   @moduledoc """
-  Backoffice: operadores, senha, 2FA (TOTP) e `audit_log` (PRD §7).
+  Backoffice: operators, password, 2FA (TOTP) and `audit_log` (PRD §7).
 
-  A sessão do operador fica no cookie assinado e criptografado do Plug. Ela expira
-  em 8 horas e o operador é recarregado do banco em cada requisição, então
-  desativar um operador vale imediatamente.
+  The operator session lives in the signed and encrypted Plug cookie. It expires
+  after 8 hours, and the operator is reloaded from the database on every request, so
+  deactivating an operator takes effect immediately.
   """
   import Ecto.Query, warn: false
 
@@ -14,7 +14,7 @@ defmodule Freguesia.Admin do
   @session_ttl_seconds 8 * 60 * 60
   @totp_issuer "Freguesia"
 
-  ## Operadores
+  ## Operators
 
   def create_operator(attrs) do
     %Operator{}
@@ -25,8 +25,8 @@ defmodule Freguesia.Admin do
   def get_operator(id), do: Repo.get(Operator, id)
 
   @doc """
-  Confere e-mail e senha. Sempre roda o hash, mesmo sem usuário, para não
-  revelar quais e-mails existem pelo tempo de resposta.
+  Checks the email and password. Always runs the hash, even without a user, so as not to
+  reveal which emails exist through response timing.
   """
   def authenticate(email, password) when is_binary(email) and is_binary(password) do
     operator = Repo.get_by(Operator, email: String.downcase(String.trim(email)))
@@ -49,9 +49,9 @@ defmodule Freguesia.Admin do
   ## TOTP
 
   @doc """
-  Prepara o enrolamento do app autenticador. Reaproveita o segredo se ele já
-  existir e ainda não estiver confirmado, para recarregar a página não invalidar
-  o que já foi escaneado. Devolve o operador e a URI `otpauth://`.
+  Prepares the authenticator app enrollment. Reuses the secret if it already
+  exists and is not yet confirmed, so that reloading the page does not invalidate
+  what was already scanned. Returns the operator and the `otpauth://` URI.
   """
   def start_totp_enrollment(%Operator{totp_secret: nil} = operator) do
     with {:ok, operator} <-
@@ -72,7 +72,7 @@ defmodule Freguesia.Admin do
     NimbleTOTP.otpauth_uri(@totp_issuer <> ":" <> email, secret, issuer: @totp_issuer)
   end
 
-  @doc "Confirma o enrolamento com um código do app. Depois disso o 2FA passa a ser exigido."
+  @doc "Confirms the enrollment with an app code. After this, 2FA is required."
   def confirm_totp_enrollment(%Operator{totp_secret: secret} = operator, code)
       when is_binary(secret) do
     if valid_totp_code?(secret, code) do
@@ -86,7 +86,7 @@ defmodule Freguesia.Admin do
 
   def confirm_totp_enrollment(_operator, _code), do: {:error, :not_enrolled}
 
-  @doc "Confere o código TOTP de um operador já cadastrado."
+  @doc "Checks the TOTP code of an already registered operator."
   def verify_totp(%Operator{totp_secret: secret, totp_confirmed_at: confirmed} = operator, code)
       when is_binary(secret) and not is_nil(confirmed) do
     if valid_totp_code?(secret, code), do: {:ok, operator}, else: {:error, :invalid_code}
@@ -100,9 +100,9 @@ defmodule Freguesia.Admin do
 
   defp valid_totp_code?(_secret, _code), do: false
 
-  ## Sessão
+  ## Session
 
-  @doc "Operador da sessão, se a sessão ainda estiver dentro das 8 horas."
+  @doc "The session operator, if the session is still within 8 hours."
   def fetch_session_operator(%{"operator_id" => id, "operator_at" => at})
       when is_binary(id) and is_integer(at) do
     if now_unix() - at <= @session_ttl_seconds, do: get_operator(id), else: nil
@@ -115,8 +115,8 @@ defmodule Freguesia.Admin do
   ## Audit log
 
   @doc """
-  Grava uma linha no `audit_log`. Use dentro da mesma transação da ação auditada,
-  para que a ação e o registro andem juntos.
+  Writes a row to `audit_log`. Use it inside the same transaction as the audited action,
+  so that the action and the record stay together.
   """
   def record_audit(operator_or_nil, action, entity, entity_id, before, after_state) do
     %AuditEntry{}

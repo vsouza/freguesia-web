@@ -1,9 +1,9 @@
 defmodule FreguesiaWeb.AdminAuth do
   @moduledoc """
-  Proteção do backoffice (PRD §7 e §13).
+  Backoffice protection (PRD §7 and §13).
 
-  Sessão de 8 horas, operador recarregado do banco a cada requisição: se o
-  operador for removido, a próxima requisição já o derruba.
+  8-hour session, operator reloaded from the database on every request: if the
+  operator is removed, the next request already kicks them out.
   """
   use FreguesiaWeb, :verified_routes
 
@@ -12,13 +12,13 @@ defmodule FreguesiaWeb.AdminAuth do
 
   alias Freguesia.Admin
 
-  @doc "Plug: carrega o operador da sessão em `conn.assigns.operator`, se houver."
+  @doc "Plug: loads the session operator into `conn.assigns.operator`, if any."
   def fetch_current_operator(conn, _opts) do
     operator = conn |> get_session() |> Admin.fetch_session_operator()
     assign(conn, :operator, operator)
   end
 
-  @doc "Plug: exige operador logado. Sem sessão, manda para o login."
+  @doc "Plug: requires a logged-in operator. Without a session, redirects to login."
   def require_operator(conn, _opts) do
     if conn.assigns[:operator] do
       conn
@@ -29,7 +29,7 @@ defmodule FreguesiaWeb.AdminAuth do
     end
   end
 
-  @doc "Grava a sessão do operador já autenticado (senha + 2FA)."
+  @doc "Stores the session of the already authenticated operator (password + 2FA)."
   def log_in(conn, operator) do
     conn
     |> configure_session(renew: true)
@@ -38,7 +38,7 @@ defmodule FreguesiaWeb.AdminAuth do
     |> put_session(:operator_at, System.system_time(:second))
   end
 
-  @doc "on_mount para as LiveViews do backoffice."
+  @doc "on_mount for the backoffice LiveViews."
   def on_mount(:require_operator, _params, session, socket) do
     case Admin.fetch_session_operator(session) do
       nil ->
