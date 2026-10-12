@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+# Migrações no boot (PRD §15). Falhou aqui, o release não sobe.
+./freguesia eval "Freguesia.Release.migrate()"
+
+PHX_SERVER=true exec ./freguesia start

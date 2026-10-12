@@ -1,0 +1,36 @@
+defmodule Freguesia.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      FreguesiaWeb.Telemetry,
+      Freguesia.Repo,
+      {DNSCluster, query: Application.get_env(:freguesia, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: Freguesia.PubSub},
+      {Oban, Application.fetch_env!(:freguesia, Oban)},
+      Freguesia.Messaging.Fake,
+      # Start a worker by calling: Freguesia.Worker.start_link(arg)
+      # {Freguesia.Worker, arg},
+      # Start to serve requests, typically the last entry
+      FreguesiaWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: Freguesia.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    FreguesiaWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end

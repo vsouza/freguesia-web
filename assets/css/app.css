@@ -1,0 +1,91 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+/* Urbanist (PRD §12): 300 itálico + 400–900 normal, com font-display: swap */
+@import url("https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400..900;1,300&display=swap");
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/freguesia_web";
+@source "../../lib/freguesia";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* Design system da Freguesia (PRD §12).
+   A paleta padrão do Tailwind é desligada: só os tokens abaixo existem,
+   então nenhum hex solto entra nos componentes. */
+@theme {
+  --color-*: initial;
+
+  --color-white: #ffffff;
+  --color-ink: #141414;
+  --color-ink-2: #3a3634;
+  --color-muted: #6f6a66;
+  --color-line: #ece7e1;
+  --color-sand: #f6f1ea;
+  --color-peach: #fbddb8;
+  --color-tomato-500: #f0582b;
+  --color-tomato-600: #c8441a;
+  --color-gold: #f5b82e;
+  --color-indigo-800: #1c2c6b;
+  --color-indigo-100: #e2e7f7;
+  --color-saffron-800: #7a4f08;
+  --color-saffron-100: #faebc6;
+
+  /* Mapa de cor por categoria (PRD §12). Cada família tem top, tint e accent.
+     Classes completas aqui para o Tailwind gerar todas; nunca montar por concatenação. */
+  --color-pessego-top: #fbddb8;
+  --color-pessego-tint: #fbf3e3;
+  --color-pessego-accent: #c8441a;
+  --color-tomate-top: #f8c9b9;
+  --color-tomate-tint: #fbe2d8;
+  --color-tomate-accent: #b5361c;
+  --color-laranja-top: #f8d3a8;
+  --color-laranja-tint: #fbe8d0;
+  --color-laranja-accent: #8f4a05;
+  --color-milho-top: #f5e093;
+  --color-milho-tint: #faf0c9;
+  --color-milho-accent: #705000;
+  --color-cacau-top: #dec5b2;
+  --color-cacau-tint: #eddfd4;
+  --color-cacau-accent: #5c3a24;
+  --color-vinho-top: #f0c6cd;
+  --color-vinho-tint: #f8e0e4;
+  --color-vinho-accent: #8a2538;
+  --color-pitaya-top: #f2cee4;
+  --color-pitaya-tint: #f8e3f0;
+  --color-pitaya-accent: #8e2e6b;
+  --color-uva-top: #d9c9e8;
+  --color-uva-tint: #ebe3f2;
+  --color-uva-accent: #553175;
+  --color-indigo-top: #cbd9ec;
+  --color-indigo-tint: #e2eaf4;
+  --color-indigo-accent: #2a4a7a;
+  --color-agua-top: #c9e3e8;
+  --color-agua-tint: #e0f0f2;
+  --color-agua-accent: #1c5c66;
+  --color-concreto-top: #dedbd7;
+  --color-concreto-tint: #eceae7;
+  --color-concreto-accent: #4a4440;
+
+  --font-sans: "Urbanist", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-tile: 18px;
+  --radius-card: 24px;
+  --radius-sheet: 28px;
+
+  --shadow-card: 0 1px 2px rgba(20, 20, 20, 0.05), 0 10px 30px rgba(20, 20, 20, 0.08);
+  --shadow-nav: 0 14px 36px rgba(20, 20, 20, 0.16);
+  --shadow-tag: 0 4px 14px rgba(20, 20, 20, 0.14);
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
