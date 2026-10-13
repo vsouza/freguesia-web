@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Ações"
 
-#: lib/freguesia_web/components/layouts.ex:186
-#: lib/freguesia_web/components/layouts.ex:198
+#: lib/freguesia_web/components/layouts.ex:208
+#: lib/freguesia_web/components/layouts.ex:220
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentando reconectar"
 
-#: lib/freguesia_web/components/layouts.ex:193
+#: lib/freguesia_web/components/layouts.ex:215
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Algo deu errado!"
 
-#: lib/freguesia_web/components/layouts.ex:181
+#: lib/freguesia_web/components/layouts.ex:203
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Não foi possível encontrar a internet"
@@ -182,7 +182,7 @@ msgstr "Fechado"
 msgid "Code"
 msgstr "Código"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:146
+#: lib/freguesia_web/live/neighborhood_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Coming soon"
 msgstr "Chegam em breve"
@@ -338,7 +338,7 @@ msgstr "E-mail ou senha inválidos."
 msgid "Log in"
 msgstr "Entrar"
 
-#: lib/freguesia_web/components/layouts.ex:147
+#: lib/freguesia_web/components/layouts.ex:169
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Sair"
@@ -359,7 +359,7 @@ msgid "More than 30%"
 msgstr "Mais de 30%"
 
 #: lib/freguesia_web/live/admin/verification_live.ex:19
-#: lib/freguesia_web/live/neighborhood_live.ex:69
+#: lib/freguesia_web/live/neighborhood_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Neighborhood"
 msgstr "Bairro"
@@ -452,6 +452,7 @@ msgid "Only the business's neighborhood"
 msgstr "Só o bairro do negócio"
 
 #: lib/freguesia_web/components.ex:123
+#: lib/freguesia_web/live/admin/places_live.ex:68
 #, elixir-autogen, elixir-format
 msgid "Open"
 msgstr "Aberto"
@@ -579,6 +580,7 @@ msgstr "Cadastro recusado."
 msgid "Reject registration"
 msgstr "Recusar cadastro"
 
+#: lib/freguesia_web/live/admin/places_live.ex:89
 #: lib/freguesia_web/live/admin/verifications_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "Rejected"
@@ -737,7 +739,7 @@ msgstr "Até 10%"
 msgid "Up to 80 characters. Don't mention other apps: the offer goes through moderation."
 msgstr "Até 80 caracteres. Não cite outros apps: a vantagem passa por moderação."
 
-#: lib/freguesia_web/components/layouts.ex:134
+#: lib/freguesia_web/components/layouts.ex:156
 #: lib/freguesia_web/live/admin/verifications_live.ex:18
 #: lib/freguesia_web/live/admin/verifications_live.ex:42
 #, elixir-autogen, elixir-format
@@ -745,7 +747,8 @@ msgid "Verifications"
 msgstr "Verificações"
 
 #: lib/freguesia_web/components.ex:97
-#: lib/freguesia_web/live/neighborhood_live.ex:135
+#: lib/freguesia_web/live/admin/places_live.ex:83
+#: lib/freguesia_web/live/neighborhood_live.ex:136
 #, elixir-autogen, elixir-format
 msgid "Verified"
 msgstr "Verificado"
@@ -848,7 +851,7 @@ msgstr "Sim"
 msgid "You have logged out of the backoffice."
 msgstr "Você saiu do backoffice."
 
-#: lib/freguesia_web/components/layouts.ex:127
+#: lib/freguesia_web/components/layouts.ex:137
 #, elixir-autogen, elixir-format
 msgid "backoffice"
 msgstr "backoffice"
@@ -883,7 +886,7 @@ msgstr "· até %{time}"
 msgid "2FA is required in the backoffice. Scan the QR code with an authenticator app (Google Authenticator, 1Password, Authy) and enter the code it shows."
 msgstr "O 2FA é obrigatório no backoffice. Escaneie o QR com um app autenticador (Google Authenticator, 1Password, Authy) e digite o código que ele mostrar."
 
-#: lib/freguesia_web/components/layouts.ex:60
+#: lib/freguesia_web/components/layouts.ex:70
 #, elixir-autogen, elixir-format
 msgid "Freguesia is a catalog: we don't sell, don't charge and don't deliver orders. Price, payment and delivery are arranged directly with the business."
 msgstr "A Freguesia é um catálogo: não vendemos, não cobramos e não entregamos pedidos. Preço, pagamento e entrega são combinados direto com o estabelecimento."
@@ -908,8 +911,8 @@ msgstr "Açaí"
 msgid "Burger"
 msgstr "Hambúrguer"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:165
-#: lib/freguesia_web/live/search_live.ex:70
+#: lib/freguesia_web/live/neighborhood_live.ex:166
+#: lib/freguesia_web/live/search_live.ex:79
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
 msgstr "Limpar filtros"
@@ -919,7 +922,7 @@ msgstr "Limpar filtros"
 msgid "Details (optional)"
 msgstr "Detalhes (opcional)"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:170
+#: lib/freguesia_web/live/neighborhood_live.ex:171
 #, elixir-autogen, elixir-format
 msgid "Do you serve this neighborhood?"
 msgstr "Você atende este bairro?"
@@ -929,7 +932,7 @@ msgstr "Você atende este bairro?"
 msgid "Few reports so far (%{count}). Ordered direct? Tell us what you paid."
 msgstr "Poucos relatos até agora (%{count}). Pediu direto? Conte quanto pagou."
 
-#: lib/freguesia_web/live/neighborhood_live.ex:106
+#: lib/freguesia_web/live/neighborhood_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Food type"
 msgstr "Tipo de comida"
@@ -944,12 +947,12 @@ msgstr "A Freguesia não recebe o pedido. Você conversa com o estabelecimento p
 msgid "Get started"
 msgstr "Começar"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:178
+#: lib/freguesia_web/live/neighborhood_live.ex:179
 #, elixir-autogen, elixir-format
 msgid "Get verified"
 msgstr "Quero aparecer aqui"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:172
+#: lib/freguesia_web/live/neighborhood_live.ex:173
 #, elixir-autogen, elixir-format
 msgid "Get verified in a few minutes and let regulars order from you directly."
 msgstr "Cadastre-se em poucos minutos e deixe os fregueses pedirem direto de você."
@@ -964,7 +967,7 @@ msgstr "Mercados"
 msgid "Hardware"
 msgstr "Construção"
 
-#: lib/freguesia_web/components/layouts.ex:71
+#: lib/freguesia_web/components/layouts.ex:81
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr "Início"
@@ -989,7 +992,7 @@ msgstr "Japonesa"
 msgid "Location"
 msgstr "Localização"
 
-#: lib/freguesia_web/components/layouts.ex:66
+#: lib/freguesia_web/components/layouts.ex:76
 #, elixir-autogen, elixir-format
 msgid "Main"
 msgstr "Principal"
@@ -999,12 +1002,12 @@ msgstr "Principal"
 msgid "Mineira"
 msgstr "Mineira"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:147
+#: lib/freguesia_web/live/neighborhood_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "No places in this segment yet. Know one that should be here?"
 msgstr "Ainda não há lugares neste segmento. Conhece um que deveria estar aqui?"
 
-#: lib/freguesia_web/live/search_live.ex:64
+#: lib/freguesia_web/live/search_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "No verified place matches this name."
 msgstr "Nenhum lugar verificado tem este nome."
@@ -1014,13 +1017,13 @@ msgstr "Nenhum lugar verificado tem este nome."
 msgid "Not now"
 msgstr "Agora não"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:158
-#: lib/freguesia_web/live/search_live.ex:63
+#: lib/freguesia_web/live/neighborhood_live.ex:159
+#: lib/freguesia_web/live/search_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "Nothing found"
 msgstr "Nada encontrado"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:123
+#: lib/freguesia_web/live/neighborhood_live.ex:124
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Open now"
 msgstr "Aberto"
@@ -1075,22 +1078,23 @@ msgstr "Relatado por %{count} fregueses nos últimos 90 dias. Pode variar."
 msgid "Restaurants"
 msgstr "Restaurantes"
 
-#: lib/freguesia_web/components/layouts.ex:77
+#: lib/freguesia_web/components/layouts.ex:87
 #: lib/freguesia_web/live/search_live.ex:14
-#: lib/freguesia_web/live/search_live.ex:37
+#: lib/freguesia_web/live/search_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr "Buscar"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:83
-#: lib/freguesia_web/live/neighborhood_live.ex:89
-#: lib/freguesia_web/live/search_live.ex:41
-#: lib/freguesia_web/live/search_live.ex:47
+#: lib/freguesia_web/live/admin/places_live.ex:37
+#: lib/freguesia_web/live/neighborhood_live.ex:84
+#: lib/freguesia_web/live/neighborhood_live.ex:90
+#: lib/freguesia_web/live/search_live.ex:46
+#: lib/freguesia_web/live/search_live.ex:52
 #, elixir-autogen, elixir-format
 msgid "Search by name"
 msgstr "Buscar pelo nome"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:94
+#: lib/freguesia_web/live/neighborhood_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "Segments"
 msgstr "Segmentos"
@@ -1105,7 +1109,7 @@ msgstr "Enviar denúncia"
 msgid "Something else"
 msgstr "Outro motivo"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:153
+#: lib/freguesia_web/live/neighborhood_live.ex:154
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Suggest a place"
 msgstr "Cadastrar lugar"
@@ -1115,12 +1119,12 @@ msgstr "Cadastrar lugar"
 msgid "Thanks. We will review this number."
 msgstr "Obrigado. Vamos revisar este número."
 
-#: lib/freguesia_web/live/neighborhood_live.ex:159
+#: lib/freguesia_web/live/neighborhood_live.ex:160
 #, elixir-autogen, elixir-format
 msgid "Try another search or remove some filters."
 msgstr "Tente outra busca ou remova alguns filtros."
 
-#: lib/freguesia_web/live/search_live.ex:53
+#: lib/freguesia_web/live/search_live.ex:58
 #, elixir-autogen, elixir-format
 msgid "Type part of a place name."
 msgstr "Digite parte do nome de um lugar."
@@ -1130,7 +1134,7 @@ msgstr "Digite parte do nome de um lugar."
 msgid "Use my location"
 msgstr "Usar minha localização"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:72
+#: lib/freguesia_web/live/neighborhood_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Verified places, confirmed by the business itself."
 msgstr "Lugares verificados, confirmados pelo próprio estabelecimento."
@@ -1165,11 +1169,12 @@ msgstr "O que está errado?"
 msgid "Where do you"
 msgstr "Onde você"
 
-#: lib/freguesia_web/live/neighborhood_live.ex:129
+#: lib/freguesia_web/live/neighborhood_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "With a perk"
 msgstr "Com vantagem"
 
+#: lib/freguesia_web/live/admin/place_live.ex:168
 #: lib/freguesia_web/live/place_live.ex:422
 #, elixir-autogen, elixir-format
 msgid "Worked"
@@ -1194,3 +1199,237 @@ msgstr "pede?"
 #, elixir-autogen, elixir-format
 msgid "Verified on Freguesia, in %{neighborhood}. Order direct on WhatsApp."
 msgstr "Verificado na Freguesia, em %{neighborhood}. Peça direto pelo WhatsApp."
+
+#: lib/freguesia_web/live/admin/places_live.ex:82
+#, elixir-autogen, elixir-format
+msgid "All statuses"
+msgstr "Todos os status"
+
+#: lib/freguesia_web/live/admin/place_live.ex:186
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Answered at"
+msgstr "Responder depois"
+
+#: lib/freguesia_web/live/admin/place_live.ex:168
+#, elixir-autogen, elixir-format
+msgid "Answers"
+msgstr "Respostas"
+
+#: lib/freguesia_web/live/admin/place_live.ex:104
+#, elixir-autogen, elixir-format
+msgid "Back to places"
+msgstr "Voltar aos lugares"
+
+#: lib/freguesia_web/live/admin/place_live.ex:128
+#, elixir-autogen, elixir-format
+msgid "Back to serving"
+msgstr "Voltar a atender"
+
+#: lib/freguesia_web/live/admin/place_live.ex:37
+#, elixir-autogen, elixir-format
+msgid "Back to serving."
+msgstr "De volta a atender."
+
+#: lib/freguesia_web/live/admin/place_live.ex:134
+#, elixir-autogen, elixir-format
+msgid "Category"
+msgstr "Categoria"
+
+#: lib/freguesia_web/live/admin/place_live.ex:43
+#, elixir-autogen, elixir-format
+msgid "Category updated."
+msgstr "Categoria atualizada."
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:75
+#, elixir-autogen, elixir-format
+msgid "Close case"
+msgstr "Fechar caso"
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:19
+#, elixir-autogen, elixir-format
+msgid "Complaint closed."
+msgstr "Denúncia fechada."
+
+#: lib/freguesia_web/components/layouts.ex:150
+#: lib/freguesia_web/live/admin/complaints_live.ex:10
+#: lib/freguesia_web/live/admin/complaints_live.ex:36
+#, elixir-autogen, elixir-format
+msgid "Complaints"
+msgstr "Denúncias"
+
+#: lib/freguesia_web/live/admin/places_live.ex:46
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Filter"
+msgstr "Filtros"
+
+#: lib/freguesia_web/live/admin/place_live.ex:177
+#, elixir-autogen, elixir-format
+msgid "Held by batch review"
+msgstr "Retidos por revisão de lote"
+
+#: lib/freguesia_web/live/admin/places_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Hidden"
+msgstr "Escondido"
+
+#: lib/freguesia_web/live/admin/place_live.ex:220
+#, elixir-autogen, elixir-format
+msgid "History"
+msgstr "Histórico"
+
+#: lib/freguesia_web/live/admin/place_live.ex:160
+#, elixir-autogen, elixir-format
+msgid "Last 30 days"
+msgstr "Últimos 30 dias"
+
+#: lib/freguesia_web/live/admin/place_live.ex:161
+#, elixir-autogen, elixir-format
+msgid "Last 90 days"
+msgstr "Últimos 90 dias"
+
+#: lib/freguesia_web/components/layouts.ex:65
+#, elixir-autogen, elixir-format
+msgid "Legal"
+msgstr "Jurídico"
+
+#: lib/freguesia_web/live/admin/places_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Needs changes"
+msgstr "Aguardando ajuste"
+
+#: lib/freguesia_web/live/admin/place_live.ex:226
+#, elixir-autogen, elixir-format
+msgid "No changes yet."
+msgstr "Nenhuma alteração ainda."
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:39
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No open complaints."
+msgstr "Sem denúncia aberta"
+
+#: lib/freguesia_web/live/admin/places_live.ex:75
+#, elixir-autogen, elixir-format
+msgid "No places match these filters."
+msgstr "Nenhum lugar com estes filtros."
+
+#: lib/freguesia_web/live/admin/place_live.ex:120
+#, elixir-autogen, elixir-format
+msgid "Not serving today"
+msgstr "Não atende hoje"
+
+#: lib/freguesia_web/live/admin/place_live.ex:178
+#, elixir-autogen, elixir-format
+msgid "Nothing held."
+msgstr "Nada retido."
+
+#: lib/freguesia_web/live/admin/place_live.ex:168
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Opens"
+msgstr "Aberto"
+
+#: lib/freguesia_web/live/admin/places_live.ex:86
+#, elixir-autogen, elixir-format
+msgid "Paused"
+msgstr "Pausado"
+
+#: lib/freguesia_web/live/admin/place_live.ex:32
+#, elixir-autogen, elixir-format
+msgid "Paused until the end of today."
+msgstr "Pausado até o fim de hoje."
+
+#: lib/freguesia_web/live/admin/places_live.ex:84
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Pending"
+msgstr "Pendente."
+
+#: lib/freguesia_web/live/admin/place_live.ex:19
+#, elixir-autogen, elixir-format
+msgid "Place not found."
+msgstr "Lugar não encontrado."
+
+#: lib/freguesia_web/live/admin/place_live.ex:60
+#, elixir-autogen, elixir-format
+msgid "Place removed from the catalog."
+msgstr "Lugar removido do catálogo."
+
+#: lib/freguesia_web/components/layouts.ex:144
+#: lib/freguesia_web/live/admin/places_live.ex:11
+#: lib/freguesia_web/live/admin/places_live.ex:30
+#, elixir-autogen, elixir-format
+msgid "Places"
+msgstr "Lugares"
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:54
+#, elixir-autogen, elixir-format
+msgid "Reason"
+msgstr "Motivo"
+
+#: lib/freguesia_web/live/admin/place_live.ex:206
+#, elixir-autogen, elixir-format
+msgid "Reason (required)"
+msgstr "Motivo (obrigatório)"
+
+#: lib/freguesia_web/live/admin/place_live.ex:193
+#, elixir-autogen, elixir-format
+msgid "Release"
+msgstr "Liberar"
+
+#: lib/freguesia_web/live/admin/place_live.ex:213
+#, elixir-autogen, elixir-format
+msgid "Remove from catalog"
+msgstr "Remover do catálogo"
+
+#: lib/freguesia_web/live/admin/place_live.ex:200
+#, elixir-autogen, elixir-format
+msgid "Remove place"
+msgstr "Remover lugar"
+
+#: lib/freguesia_web/live/admin/places_live.ex:88
+#, elixir-autogen, elixir-format
+msgid "Removed"
+msgstr "Removido"
+
+#: lib/freguesia_web/live/admin/place_live.ex:74
+#, elixir-autogen, elixir-format
+msgid "Report released to the statistics."
+msgstr "Relato liberado para as estatísticas."
+
+#: lib/freguesia_web/live/admin/place_live.ex:155
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Reports"
+msgstr "Economia relatada"
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:67
+#, elixir-autogen, elixir-format
+msgid "Resolution"
+msgstr "Resolução"
+
+#: lib/freguesia_web/live/admin/place_live.ex:149
+#, elixir-autogen, elixir-format
+msgid "Save category"
+msgstr "Salvar categoria"
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:54
+#, elixir-autogen, elixir-format
+msgid "Source"
+msgstr "Origem"
+
+#: lib/freguesia_web/live/admin/place_live.ex:108
+#, elixir-autogen, elixir-format
+msgid "Status"
+msgstr "Status"
+
+#: lib/freguesia_web/live/admin/place_live.ex:50
+#, elixir-autogen, elixir-format
+msgid "This category does not belong to the place's segment."
+msgstr "Esta categoria não pertence ao segmento do lugar."
+
+#: lib/freguesia_web/live/admin/place_live.ex:64
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Write the reason to remove this place."
+msgstr "Escreva o motivo para continuar."
+
+#: lib/freguesia_web/live/admin/complaints_live.ex:22
+#, elixir-autogen, elixir-format
+msgid "Write the resolution to close this case."
+msgstr "Escreva a resolução para fechar este caso."

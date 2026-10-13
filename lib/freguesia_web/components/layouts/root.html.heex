@@ -12,6 +12,8 @@
       {assigns[:page_title]}
     </.live_title>
     <meta :for={{key, value} <- assigns[:og] || %{}} property={key} content={value} />
+    <link rel="manifest" href={~p"/manifest.json"} />
+    <link rel="apple-touch-icon" href={~p"/images/icon-192.png"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>

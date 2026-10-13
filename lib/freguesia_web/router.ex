@@ -53,6 +53,9 @@ defmodule FreguesiaWeb.Router do
 
     get "/", PageController, :home
     get "/start", OnboardingController, :start
+    get "/terms", LegalController, :terms
+    get "/privacy", LegalController, :privacy
+    get "/how-we-calculate", LegalController, :how_we_calculate
     get "/location/:neighborhood", LocationController, :set
     get "/places/:slug/whatsapp", WhatsAppController, :open
 
@@ -93,6 +96,9 @@ defmodule FreguesiaWeb.Router do
       on_mount: [FreguesiaWeb.Locale, {FreguesiaWeb.AdminAuth, :require_operator}] do
       live "/verifications", VerificationsLive
       live "/verifications/:id", VerificationLive
+      live "/places", PlacesLive
+      live "/places/:id", PlaceLive
+      live "/complaints", ComplaintsLive
       # Fake inbox: where the verification code shows up in dev and staging.
       # Behind login, because in staging it shows real test codes.
       live "/fake-inbox", FakeInboxLive
