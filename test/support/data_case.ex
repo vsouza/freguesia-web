@@ -31,6 +31,9 @@ defmodule Freguesia.DataCase do
 
   setup tags do
     Freguesia.DataCase.setup_sandbox(tags)
+    # Same locale FreguesiaWeb.Locale sets for requests and LiveViews, so changeset
+    # messages produced in these tests are the pt_BR copy.
+    Gettext.put_locale(FreguesiaWeb.Gettext, "pt_BR")
     :ok
   end
 

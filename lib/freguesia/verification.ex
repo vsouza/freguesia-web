@@ -13,6 +13,8 @@ defmodule Freguesia.Verification do
   """
   import Ecto.Query, warn: false
 
+  use Gettext, backend: FreguesiaWeb.Gettext
+
   alias Ecto.Changeset
   alias Freguesia.{Admin, Messaging, Repo}
   alias Freguesia.Catalog.{Category, Neighborhood, Offer, Place, PlaceCoverage, Segment, Text}
@@ -304,17 +306,21 @@ defmodule Freguesia.Verification do
   end
 
   defp check_segment(changeset, nil),
-    do: Changeset.add_error(changeset, :segment_id, "tipo inválido")
+    do: Changeset.add_error(changeset, :segment_id, dgettext("errors", "invalid type"))
 
   defp check_segment(changeset, %Segment{key: "restaurants", id: segment_id}) do
     category_id = Changeset.get_field(changeset, :category_id)
 
     cond do
       is_nil(category_id) ->
-        Changeset.add_error(changeset, :category_id, "escolha o tipo de comida")
+        Changeset.add_error(
+          changeset,
+          :category_id,
+          dgettext("errors", "choose the type of food")
+        )
 
       not category_of_segment?(category_id, segment_id) ->
-        Changeset.add_error(changeset, :category_id, "tipo de comida inválido")
+        Changeset.add_error(changeset, :category_id, dgettext("errors", "invalid type of food"))
 
       true ->
         changeset
@@ -335,7 +341,8 @@ defmodule Freguesia.Verification do
       id ->
         if pilot_neighborhood?(id),
           do: changeset,
-          else: Changeset.add_error(changeset, field, "fora do piloto por enquanto")
+          else:
+            Changeset.add_error(changeset, field, dgettext("errors", "outside the pilot for now"))
     end
   end
 
@@ -344,7 +351,12 @@ defmodule Freguesia.Verification do
 
     if Enum.all?(ids, &pilot_neighborhood?/1),
       do: changeset,
-      else: Changeset.add_error(changeset, :coverage_ids, "bairro fora do piloto")
+      else:
+        Changeset.add_error(
+          changeset,
+          :coverage_ids,
+          dgettext("errors", "neighborhood outside the pilot")
+        )
   end
 
   defp pilot_neighborhood?(id) do
@@ -353,8 +365,12 @@ defmodule Freguesia.Verification do
 
   defp normalize_whatsapp(form) do
     case Phone.normalize(form.whatsapp) do
-      {:ok, e164} -> {:ok, e164}
-      :error -> {:error, {:whatsapp, "use um WhatsApp brasileiro com DDD"}}
+      {:ok, e164} ->
+        {:ok, e164}
+
+      :error ->
+        {:error,
+         {:whatsapp, dgettext("errors", "use a Brazilian WhatsApp number with area code")}}
     end
   end
 
@@ -376,7 +392,7 @@ defmodule Freguesia.Verification do
   defp save_existing_or_new(nil, form, e164), do: insert_place(form, e164)
 
   defp save_existing_or_new(%Place{status: :verified}, _form, _e164),
-    do: {:error, {:whatsapp, "este número já está no catálogo"}}
+    do: {:error, {:whatsapp, dgettext("errors", "this number is already in the catalog")}}
 
   defp save_existing_or_new(%Place{status: :rejected} = place, form, _e164),
     do: reuse_rejected(place, form)
@@ -390,7 +406,10 @@ defmodule Freguesia.Verification do
 
     if DateTime.compare(DateTime.utc_now(), available_at) == :lt do
       {:error,
-       {:whatsapp, "este número só pode tentar de novo a partir de #{format_date(available_at)}"}}
+       {:whatsapp,
+        dgettext("errors", "this number can only try again from %{date}",
+          date: format_date(available_at)
+        )}}
     else
       update_place_from_signup(place, form)
     end
@@ -697,7 +716,7 @@ defmodule Freguesia.Verification do
   end
 
   defp place_url(place) do
-    Application.fetch_env!(:freguesia, :public_url) <> "/lugar/" <> place.slug
+    Application.fetch_env!(:freguesia, :public_url) <> "/places/" <> place.slug
   end
 
   ## Utilities

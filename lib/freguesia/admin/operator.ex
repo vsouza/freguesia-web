@@ -7,6 +7,8 @@ defmodule Freguesia.Admin.Operator do
   """
   use Freguesia.Schema
 
+  use Gettext, backend: FreguesiaWeb.Gettext
+
   @roles [:admin, :moderator]
 
   schema "admins" do
@@ -25,8 +27,14 @@ defmodule Freguesia.Admin.Operator do
     operator
     |> cast(attrs, [:email, :password, :role])
     |> validate_required([:email, :password])
-    |> validate_format(:email, ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "e-mail inválido")
-    |> validate_length(:password, min: 12, max: 72, message: "use entre 12 e 72 caracteres")
+    |> validate_format(:email, ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: dgettext("errors", "invalid email")
+    )
+    |> validate_length(:password,
+      min: 12,
+      max: 72,
+      message: dgettext("errors", "use between 12 and 72 characters")
+    )
     |> unique_constraint(:email)
     |> put_password_hash()
   end

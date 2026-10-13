@@ -9,6 +9,8 @@ defmodule Freguesia.Verification.Signup do
 
   import Ecto.Changeset
 
+  use Gettext, backend: FreguesiaWeb.Gettext
+
   alias Freguesia.Verification.Phone
 
   @primary_key false
@@ -42,18 +44,24 @@ defmodule Freguesia.Verification.Signup do
     |> cast(attrs, @castable)
     |> update_change(:name, &trim_or_nil/1)
     |> update_change(:offer_text, &trim_or_nil/1)
-    |> validate_required(@required, message: "obrigatório")
-    |> validate_length(:name, min: 3, max: 60, message: "use entre 3 e 60 caracteres")
-    |> validate_length(:offer_text, max: 80, message: "até 80 caracteres")
+    |> validate_required(@required, message: dgettext("errors", "is required"))
+    |> validate_length(:name,
+      min: 3,
+      max: 60,
+      message: dgettext("errors", "use between 3 and 60 characters")
+    )
+    |> validate_length(:offer_text, max: 80, message: dgettext("errors", "up to 80 characters"))
     |> validate_whatsapp()
-    |> validate_acceptance(:accept_terms, message: "aceite os termos para continuar")
+    |> validate_acceptance(:accept_terms,
+      message: dgettext("errors", "accept the terms to continue")
+    )
   end
 
   defp validate_whatsapp(changeset) do
     validate_change(changeset, :whatsapp, fn :whatsapp, value ->
       case Phone.normalize(value) do
         {:ok, _} -> []
-        :error -> [whatsapp: "use um WhatsApp brasileiro com DDD"]
+        :error -> [whatsapp: dgettext("errors", "use a Brazilian WhatsApp number with area code")]
       end
     end)
   end

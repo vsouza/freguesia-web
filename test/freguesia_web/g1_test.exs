@@ -21,7 +21,7 @@ defmodule FreguesiaWeb.G1Test do
     whatsapp = Fixtures.unique_whatsapp()
     e164 = "+55" <> String.replace(whatsapp, ~r/\D/, "")
 
-    {:ok, signup, _} = live(conn, ~p"/cadastrar")
+    {:ok, signup, _} = live(conn, ~p"/business/register")
 
     signup
     |> element("#signup-form")
@@ -35,7 +35,7 @@ defmodule FreguesiaWeb.G1Test do
     assert has_element?(signup, "#signup-done")
 
     # 2. Before approval, the place does not appear in the catalog
-    {:ok, _home, html} = live(build_conn(), ~p"/bairro/savassi")
+    {:ok, _home, html} = live(build_conn(), ~p"/areas/savassi")
     refute html =~ "Pizzaria G1"
 
     # 3. Operator logs into the backoffice and approves
@@ -46,22 +46,22 @@ defmodule FreguesiaWeb.G1Test do
       Admin.confirm_totp_enrollment(operator, NimbleTOTP.verification_code(operator.totp_secret))
 
     admin =
-      post(build_conn(), ~p"/admin/entrar", %{
+      post(build_conn(), ~p"/admin/sign-in", %{
         "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
       })
 
     admin =
-      post(admin, ~p"/admin/entrar/codigo", %{
+      post(admin, ~p"/admin/sign-in/code", %{
         "totp" => %{"code" => NimbleTOTP.verification_code(operator.totp_secret)}
       })
 
-    assert redirected_to(admin) == ~p"/admin/verificacoes"
+    assert redirected_to(admin) == ~p"/admin/verifications"
 
-    {:ok, queue, _} = live(admin, ~p"/admin/verificacoes")
+    {:ok, queue, _} = live(admin, ~p"/admin/verifications")
     assert has_element?(queue, "#requests", "Pizzaria G1")
 
     request = Repo.one!(from_request(e164))
-    {:ok, detail, _} = live(admin, ~p"/admin/verificacoes/#{request.id}")
+    {:ok, detail, _} = live(admin, ~p"/admin/verifications/#{request.id}")
 
     # WhatsApp profile name not read yet: approval requires an internal note
     assert {:error, {:live_redirect, _}} =
@@ -71,19 +71,19 @@ defmodule FreguesiaWeb.G1Test do
 
     # 4. The approval message goes out with the page link
     assert [approval] = Enum.filter(Fake.sent_to(e164), &(&1.template == "place_approved"))
-    assert approval.params["url"] =~ "/lugar/pizzaria-g1"
+    assert approval.params["url"] =~ "/places/pizzaria-g1"
 
     # 5. The card is live, with the Verified badge
-    {:ok, home, _} = live(build_conn(), ~p"/bairro/savassi")
+    {:ok, home, _} = live(build_conn(), ~p"/areas/savassi")
     assert has_element?(home, "#place-card-pizzaria-g1", "Pizzaria G1")
     assert has_element?(home, "#place-card-pizzaria-g1", "Verificado")
 
     # 6. And the details page has the order-on-WhatsApp button
-    {:ok, place, _} = live(build_conn(), ~p"/lugar/pizzaria-g1")
-    assert has_element?(place, "a#whatsapp-cta[href='/r/pizzaria-g1']")
+    {:ok, place, _} = live(build_conn(), ~p"/places/pizzaria-g1")
+    assert has_element?(place, "a#whatsapp-cta[href='/places/pizzaria-g1/whatsapp']")
 
     # ...and the click records the opening and leads to the restaurant's wa.me link
-    redirected = build_conn() |> get("/r/pizzaria-g1")
+    redirected = build_conn() |> get("/places/pizzaria-g1/whatsapp")
     assert redirected_to(redirected, 302) =~ "https://wa.me/" <> String.replace(e164, "+", "")
 
     # The test operator ends up with confirmed 2FA

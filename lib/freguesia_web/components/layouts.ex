@@ -25,22 +25,90 @@ defmodule FreguesiaWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
 
+  attr :current_neighborhood, :string,
+    default: "savassi",
+    doc: "the neighborhood the Home tab points to"
+
+  attr :active_tab, :atom,
+    default: nil,
+    values: [nil, :home, :search],
+    doc: "the active bottom-nav tab"
+
+  attr :wide, :boolean, default: false, doc: "use the wider desktop grid for list screens"
+
+  attr :gradient, :string, default: nil, doc: "category gradient classes for the top band"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
     <div class="flex min-h-dvh flex-col bg-white">
-      <main class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-6 md:max-w-3xl">
+      <div
+        :if={@gradient}
+        class={[
+          "pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-linear-to-b",
+          @gradient,
+          "to-white"
+        ]}
+        aria-hidden="true"
+      >
+      </div>
+
+      <main class={[
+        "mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-28 pt-6 md:max-w-3xl",
+        @wide && "md:max-w-5xl"
+      ]}>
         {render_slot(@inner_block)}
       </main>
 
       <footer class="border-t border-line px-4 py-6 text-center text-xs leading-relaxed text-muted">
-        A Freguesia é um catálogo: não vendemos, não cobramos e não entregamos pedidos.
-        Preço, pagamento e entrega são combinados direto com o estabelecimento.
+        {gettext(
+          "Freguesia is a catalog: we don't sell, don't charge and don't deliver orders. Price, payment and delivery are arranged directly with the business."
+        )}
       </footer>
+
+      <nav
+        aria-label={gettext("Main")}
+        class="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-sm justify-around rounded-full bg-white px-3 py-2 shadow-nav md:max-w-md"
+      >
+        <.tab_link
+          href={~p"/areas/#{@current_neighborhood}"}
+          label={gettext("Home")}
+          icon="hero-home"
+          active={@active_tab == :home}
+        />
+        <.tab_link
+          href={~p"/search"}
+          label={gettext("Search")}
+          icon="hero-magnifying-glass"
+          active={@active_tab == :search}
+        />
+      </nav>
     </div>
 
     <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :href, :string, required: true
+  attr :label, :string, required: true
+  attr :icon, :string, required: true
+  attr :active, :boolean, default: false
+
+  defp tab_link(assigns) do
+    ~H"""
+    <.link
+      navigate={@href}
+      aria-current={@active && "page"}
+      class={[
+        "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-full px-5 text-xs font-bold",
+        @active && "bg-ink text-white",
+        !@active && "text-ink-2 hover:bg-sand"
+      ]}
+    >
+      <.icon name={@icon} class="size-5" />
+      {@label}
+    </.link>
     """
   end
 
@@ -61,14 +129,14 @@ defmodule FreguesiaWeb.Layouts do
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div class="flex items-center gap-6">
             <span class="text-base font-extrabold tracking-tight">
-              Freguesia <span class="font-normal text-muted">· backoffice</span>
+              Freguesia <span class="font-normal text-muted">· {gettext("backoffice")}</span>
             </span>
             <nav :if={@operator} aria-label="Backoffice" class="flex gap-1 text-sm font-semibold">
               <.link
-                navigate={~p"/admin/verificacoes"}
+                navigate={~p"/admin/verifications"}
                 class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"
               >
-                Verificações
+                {gettext("Verifications")}
               </.link>
             </nav>
           </div>
@@ -76,12 +144,12 @@ defmodule FreguesiaWeb.Layouts do
           <div :if={@operator} class="flex items-center gap-3 text-sm">
             <span class="hidden text-muted sm:inline">{@operator.email}</span>
             <.link
-              href={~p"/admin/sair"}
+              href={~p"/admin/sign-out"}
               method="delete"
               id="admin-logout"
               class="rounded-full border border-line bg-white px-3 py-1.5 font-semibold hover:bg-sand"
             >
-              Sair
+              {gettext("Log out")}
             </.link>
           </div>
         </div>

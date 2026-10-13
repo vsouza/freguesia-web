@@ -13,7 +13,8 @@ defmodule Freguesia.MixProject do
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       # PRD §14: minimum 80% coverage in the contexts
-      test_coverage: [summary: [threshold: 80]]
+      test_coverage: [summary: [threshold: 80]],
+      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs"]
     ]
   end
 

@@ -1,6 +1,6 @@
 defmodule FreguesiaWeb.WhatsAppController do
   @moduledoc """
-  `GET /r/:slug`: records the opening and sends the customer to the place's WhatsApp.
+  `GET /places/:slug/whatsapp`: records the opening and sends the customer to the place's WhatsApp.
 
   The record is written before the redirect, so it works without JavaScript.
   When the button is hidden (complaints) or the place is paused, there is no opening:
@@ -18,18 +18,21 @@ defmodule FreguesiaWeb.WhatsAppController do
     cond do
       is_nil(place) or place.status != :verified ->
         conn
-        |> put_flash(:error, "Esse lugar não está no catálogo.")
-        |> redirect(to: ~p"/bairro/savassi")
+        |> put_flash(:error, gettext("This place is not in the catalog."))
+        |> redirect(to: ~p"/areas/savassi")
 
       place.hours_status == {:paused} ->
         conn
-        |> put_flash(:error, "Esse lugar não está atendendo hoje.")
-        |> redirect(to: ~p"/lugar/#{slug}")
+        |> put_flash(:error, gettext("This place is not taking orders today."))
+        |> redirect(to: ~p"/places/#{slug}")
 
       Reports.whatsapp_hidden?(place.id) ->
         conn
-        |> put_flash(:error, "Esse número está em revisão e não aparece para pedido agora.")
-        |> redirect(to: ~p"/lugar/#{slug}")
+        |> put_flash(
+          :error,
+          gettext("This number is under review and is not shown for orders right now.")
+        )
+        |> redirect(to: ~p"/places/#{slug}")
 
       true ->
         {:ok, _open} = Reports.open_whatsapp(place.id, device_id)

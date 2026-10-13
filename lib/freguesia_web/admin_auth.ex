@@ -24,7 +24,7 @@ defmodule FreguesiaWeb.AdminAuth do
       conn
     else
       conn
-      |> redirect(to: ~p"/admin/entrar")
+      |> redirect(to: ~p"/admin/sign-in")
       |> halt()
     end
   end
@@ -42,7 +42,7 @@ defmodule FreguesiaWeb.AdminAuth do
   def on_mount(:require_operator, _params, session, socket) do
     case Admin.fetch_session_operator(session) do
       nil ->
-        {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/admin/entrar")}
+        {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/admin/sign-in")}
 
       operator ->
         {:cont, Phoenix.Component.assign(socket, :operator, operator)}

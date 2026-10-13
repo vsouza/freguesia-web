@@ -7,14 +7,14 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
   alias Freguesia.{Fixtures, Repo}
   alias Freguesia.Messaging.Fake
 
-  describe "neighborhood home (/bairro/:slug)" do
+  describe "neighborhood home (/areas/:neighborhood)" do
     test "lists verified places and does not list pending ones", %{conn: conn} do
       neighborhood = Fixtures.neighborhood()
       verified = Fixtures.verified_place(%{name: "Pizzaria Visível", neighborhood: neighborhood})
       pending = Fixtures.verified_place(%{name: "Pizzaria Oculta", neighborhood: neighborhood})
       Repo.update_all(from_place(pending), set: [status: :pending])
 
-      {:ok, view, _html} = live(conn, ~p"/bairro/savassi")
+      {:ok, view, _html} = live(conn, ~p"/areas/savassi")
 
       assert has_element?(view, "#place-card-#{verified.slug}")
       refute render(view) =~ "Pizzaria Oculta"
@@ -34,7 +34,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
         approved_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
-      {:ok, view, _html} = live(conn, ~p"/bairro/savassi")
+      {:ok, view, _html} = live(conn, ~p"/areas/savassi")
 
       assert has_element?(view, "#place-card-#{place.slug}", "Verificado")
       assert has_element?(view, "#place-card-#{place.slug}", "10% off")
@@ -44,31 +44,41 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
 
     test "neighborhood without places shows the empty state", %{conn: conn} do
       Fixtures.neighborhood()
-      {:ok, view, html} = live(conn, ~p"/bairro/savassi")
+      {:ok, view, html} = live(conn, ~p"/areas/savassi")
 
       assert html =~ "Chegam em breve"
       assert has_element?(view, "#places")
     end
 
     test "unknown neighborhood falls back to Savassi", %{conn: conn} do
-      assert {:error, {:live_redirect, %{to: "/bairro/savassi"}}} =
-               live(conn, ~p"/bairro/nao-existe")
+      assert {:error, {:live_redirect, %{to: "/areas/savassi"}}} =
+               live(conn, ~p"/areas/nao-existe")
     end
 
-    test "the home redirects to the default neighborhood", %{conn: conn} do
-      assert redirected_to(get(conn, ~p"/")) == "/bairro/savassi"
+    test "first visit shows the welcome screen", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      assert html_response(conn, 200) =~ "Começar"
+    end
+
+    test "a device that already saw the welcome goes to its neighborhood", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_cookie("onboarded", "1")
+        |> get(~p"/")
+
+      assert redirected_to(conn) == "/areas/savassi"
     end
   end
 
-  describe "place details (/lugar/:slug)" do
+  describe "place details (/places/:slug)" do
     test "verified place shows the WhatsApp button that goes through the opening record", %{
       conn: conn
     } do
       place = Fixtures.verified_place(%{name: "Pizza do Lago", whatsapp_e164: "+5531977776666"})
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
 
-      assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}']")
+      assert has_element?(view, "a#whatsapp-cta[href='/places/#{place.slug}/whatsapp']")
     end
 
     test "paused place shows its status and offers no order button", %{conn: conn} do
@@ -78,7 +88,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
         set: [paused_until: DateTime.add(DateTime.utc_now(), 3600)]
       )
 
-      {:ok, view, html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, html} = live(conn, ~p"/places/#{place.slug}")
       assert html =~ "Sem atender hoje"
       refute has_element?(view, "a#whatsapp-cta")
     end
@@ -87,18 +97,18 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       place = Fixtures.verified_place(%{name: "Pendente Escondido"})
       Repo.update_all(from_place(place), set: [status: :pending])
 
-      assert {:error, {:live_redirect, %{to: "/bairro/savassi"}}} =
-               live(conn, ~p"/lugar/#{place.slug}")
+      assert {:error, {:live_redirect, %{to: "/areas/savassi"}}} =
+               live(conn, ~p"/places/#{place.slug}")
     end
   end
 
-  describe "3-step signup (/cadastrar)" do
+  describe "3-step signup (/business/register)" do
     test "full flow: data, WhatsApp code, confirmation and success screen", %{conn: conn} do
       segment = Fixtures.restaurants()
       Fixtures.category()
       Fixtures.neighborhood()
 
-      {:ok, view, html} = live(conn, ~p"/cadastrar")
+      {:ok, view, html} = live(conn, ~p"/business/register")
       assert html =~ "Passo 1 de 3"
 
       # Restaurant type shows the cuisine type field
@@ -134,7 +144,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       segment = Fixtures.restaurants()
       Fixtures.category()
       Fixtures.neighborhood()
-      {:ok, view, _html} = live(conn, ~p"/cadastrar")
+      {:ok, view, _html} = live(conn, ~p"/business/register")
 
       # As in real use: picks the type first, so the cuisine field appears
       view

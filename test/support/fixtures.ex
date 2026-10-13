@@ -21,7 +21,18 @@ defmodule Freguesia.Fixtures do
     neighborhood(%{slug: "centro", name: "Centro", pilot: false})
     restaurants()
     category("pizza")
+    savassi_polygon!()
     :ok
+  end
+
+  # A square around the Savassi centre, so point-in-polygon tests have geometry.
+  defp savassi_polygon! do
+    Repo.query!(
+      "UPDATE neighborhoods SET geom = ST_GeomFromText($1, 4326) WHERE slug = 'savassi'",
+      [
+        "POLYGON((-43.9408 -19.9402, -43.9348 -19.9402, -43.9348 -19.9342, -43.9408 -19.9342, -43.9408 -19.9402))"
+      ]
+    )
   end
 
   def city do
@@ -43,13 +54,13 @@ defmodule Freguesia.Fixtures do
   end
 
   def restaurants do
-    get_or_insert(Segment, %{key: "restaurants"}, %{name: "Restaurantes", color_key: "pessego"})
+    get_or_insert(Segment, %{key: "restaurants"}, %{name: "Restaurantes", color_key: "peach"})
   end
 
   def category(key \\ "pizza") do
     get_or_insert(Category, %{segment_id: restaurants().id, key: key}, %{
       name: String.capitalize(key),
-      color_key: "tomate"
+      color_key: "tomato"
     })
   end
 

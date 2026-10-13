@@ -12,17 +12,17 @@ defmodule FreguesiaWeb.Admin.SessionController do
 
   def index(conn, _params) do
     if conn.assigns[:operator] do
-      redirect(conn, to: ~p"/admin/verificacoes")
+      redirect(conn, to: ~p"/admin/verifications")
     else
-      redirect(conn, to: ~p"/admin/entrar")
+      redirect(conn, to: ~p"/admin/sign-in")
     end
   end
 
   def new(conn, _params) do
     if conn.assigns[:operator] do
-      redirect(conn, to: ~p"/admin/verificacoes")
+      redirect(conn, to: ~p"/admin/verifications")
     else
-      render(conn, :new, form: login_form(), page_title: "Entrar")
+      render(conn, :new, form: login_form(), page_title: gettext("Log in"))
     end
   end
 
@@ -36,15 +36,15 @@ defmodule FreguesiaWeb.Admin.SessionController do
 
       {:error, :invalid} ->
         conn
-        |> put_flash(:error, "E-mail ou senha inválidos.")
-        |> render(:new, form: login_form(email), page_title: "Entrar")
+        |> put_flash(:error, gettext("Invalid email or password."))
+        |> render(:new, form: login_form(email), page_title: gettext("Log in"))
     end
   end
 
   def totp(conn, _params) do
     case pending_operator(conn) do
-      nil -> redirect(conn, to: ~p"/admin/entrar")
-      _operator -> render(conn, :totp, form: totp_form(), page_title: "Código")
+      nil -> redirect(conn, to: ~p"/admin/sign-in")
+      _operator -> render(conn, :totp, form: totp_form(), page_title: gettext("Code"))
     end
   end
 
@@ -53,22 +53,22 @@ defmodule FreguesiaWeb.Admin.SessionController do
          {:ok, operator} <- Admin.verify_totp(operator, String.trim(code)) do
       conn
       |> AdminAuth.log_in(operator)
-      |> redirect(to: ~p"/admin/verificacoes")
+      |> redirect(to: ~p"/admin/verifications")
     else
       nil ->
-        redirect(conn, to: ~p"/admin/entrar")
+        redirect(conn, to: ~p"/admin/sign-in")
 
       {:error, _reason} ->
         conn
-        |> put_flash(:error, "Código inválido. Confira o app e tente de novo.")
-        |> render(:totp, form: totp_form(), page_title: "Código")
+        |> put_flash(:error, gettext("Invalid code. Check the app and try again."))
+        |> render(:totp, form: totp_form(), page_title: gettext("Code"))
     end
   end
 
   def enroll(conn, _params) do
     case pending_operator(conn) do
       nil ->
-        redirect(conn, to: ~p"/admin/entrar")
+        redirect(conn, to: ~p"/admin/sign-in")
 
       operator ->
         {:ok, operator, uri} = Admin.start_totp_enrollment(operator)
@@ -77,7 +77,7 @@ defmodule FreguesiaWeb.Admin.SessionController do
           qr_svg: uri |> EQRCode.encode() |> EQRCode.svg(width: 220),
           secret: Base.encode32(operator.totp_secret, padding: false),
           form: totp_form(),
-          page_title: "Cadastrar o app"
+          page_title: gettext("Set up the app")
         )
     end
   end
@@ -85,7 +85,7 @@ defmodule FreguesiaWeb.Admin.SessionController do
   def confirm_enroll(conn, %{"totp" => %{"code" => code}}) do
     case pending_operator(conn) do
       nil ->
-        redirect(conn, to: ~p"/admin/entrar")
+        redirect(conn, to: ~p"/admin/sign-in")
 
       operator ->
         case Admin.confirm_totp_enrollment(operator, String.trim(code)) do
@@ -94,14 +94,14 @@ defmodule FreguesiaWeb.Admin.SessionController do
             |> AdminAuth.log_in(operator)
             |> put_flash(
               :info,
-              "Pronto. A partir de agora o código do app é pedido em todo login."
+              gettext("Done. From now on the app code is required on every login.")
             )
-            |> redirect(to: ~p"/admin/verificacoes")
+            |> redirect(to: ~p"/admin/verifications")
 
           {:error, _reason} ->
             conn
-            |> put_flash(:error, "Código inválido. Escaneie o QR de novo se preciso.")
-            |> redirect(to: ~p"/admin/entrar/cadastrar-2fa")
+            |> put_flash(:error, gettext("Invalid code. Scan the QR code again if needed."))
+            |> redirect(to: ~p"/admin/sign-in/2fa-setup")
         end
     end
   end
@@ -109,12 +109,12 @@ defmodule FreguesiaWeb.Admin.SessionController do
   def delete(conn, _params) do
     conn
     |> configure_session(drop: true)
-    |> put_flash(:info, "Você saiu do backoffice.")
-    |> redirect(to: ~p"/admin/entrar")
+    |> put_flash(:info, gettext("You have logged out of the backoffice."))
+    |> redirect(to: ~p"/admin/sign-in")
   end
 
-  defp next_step_after_password(%{totp_confirmed_at: nil}), do: ~p"/admin/entrar/cadastrar-2fa"
-  defp next_step_after_password(_operator), do: ~p"/admin/entrar/codigo"
+  defp next_step_after_password(%{totp_confirmed_at: nil}), do: ~p"/admin/sign-in/2fa-setup"
+  defp next_step_after_password(_operator), do: ~p"/admin/sign-in/code"
 
   defp pending_operator(conn) do
     case get_session(conn, :pending_operator_id) do

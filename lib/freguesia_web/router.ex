@@ -25,6 +25,7 @@ defmodule FreguesiaWeb.Router do
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {FreguesiaWeb.Layouts, :root}
+    plug FreguesiaWeb.Locale
     plug FreguesiaWeb.DeviceSession
     plug :protect_from_forgery
 
@@ -51,12 +52,24 @@ defmodule FreguesiaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    get "/r/:slug", WhatsAppController, :open
+    get "/start", OnboardingController, :start
+    get "/location/:neighborhood", LocationController, :set
+    get "/places/:slug/whatsapp", WhatsAppController, :open
 
-    live_session :catalog do
-      live "/bairro/:slug", NeighborhoodLive
-      live "/lugar/:slug", PlaceLive
-      live "/cadastrar", SignupLive
+    live_session :catalog, on_mount: [FreguesiaWeb.Locale] do
+      live "/location", LocationLive
+      live "/areas/:neighborhood", NeighborhoodLive
+      live "/search", SearchLive
+      live "/business/register", SignupLive
+    end
+  end
+
+  # The place page carries Open Graph tags, set before the LiveView renders (PRD §5).
+  scope "/", FreguesiaWeb do
+    pipe_through [:browser, FreguesiaWeb.PlaceMeta]
+
+    live_session :place, on_mount: [FreguesiaWeb.Locale] do
+      live "/places/:slug", PlaceLive
     end
   end
 
@@ -64,25 +77,25 @@ defmodule FreguesiaWeb.Router do
     pipe_through [:browser, :admin]
 
     get "/", SessionController, :index
-    get "/entrar", SessionController, :new
-    post "/entrar", SessionController, :create
-    get "/entrar/codigo", SessionController, :totp
-    post "/entrar/codigo", SessionController, :verify_totp
-    get "/entrar/cadastrar-2fa", SessionController, :enroll
-    post "/entrar/cadastrar-2fa", SessionController, :confirm_enroll
-    delete "/sair", SessionController, :delete
+    get "/sign-in", SessionController, :new
+    post "/sign-in", SessionController, :create
+    get "/sign-in/code", SessionController, :totp
+    post "/sign-in/code", SessionController, :verify_totp
+    get "/sign-in/2fa-setup", SessionController, :enroll
+    post "/sign-in/2fa-setup", SessionController, :confirm_enroll
+    delete "/sign-out", SessionController, :delete
   end
 
   scope "/admin", FreguesiaWeb.Admin do
     pipe_through [:browser, :admin, :admin_authenticated]
 
     live_session :admin,
-      on_mount: [{FreguesiaWeb.AdminAuth, :require_operator}] do
-      live "/verificacoes", VerificationsLive
-      live "/verificacoes/:id", VerificationLive
+      on_mount: [FreguesiaWeb.Locale, {FreguesiaWeb.AdminAuth, :require_operator}] do
+      live "/verifications", VerificationsLive
+      live "/verifications/:id", VerificationLive
       # Fake inbox: where the verification code shows up in dev and staging.
       # Behind login, because in staging it shows real test codes.
-      live "/mensagens-fake", FakeInboxLive
+      live "/fake-inbox", FakeInboxLive
     end
   end
 

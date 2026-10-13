@@ -60,10 +60,10 @@ neighborhood = fn slug -> Repo.get_by!(Neighborhood, slug: slug) end
 # --- Segments and categories -----------------------------------------------
 
 segments = [
-  {"restaurants", "Restaurantes", "pessego"},
-  {"pharmacies", "Farmácias", "agua"},
-  {"markets", "Mercados", "laranja"},
-  {"construction", "Construção", "concreto"},
+  {"restaurants", "Restaurantes", "peach"},
+  {"pharmacies", "Farmácias", "water"},
+  {"grocery", "Mercados", "orange"},
+  {"hardware", "Construção", "concrete"},
   {"pet", "Pet", "pitaya"}
 ]
 
@@ -77,12 +77,12 @@ end
 restaurants = Repo.get_by!(Segment, key: "restaurants")
 
 categories = [
-  {"pizza", "Pizza", "tomate"},
-  {"mineira", "Mineira", "milho"},
-  {"burger", "Hambúrguer", "cacau"},
-  {"italian", "Italiana", "vinho"},
+  {"pizza", "Pizza", "tomato"},
+  {"mineira", "Mineira", "corn"},
+  {"burger", "Hambúrguer", "cocoa"},
+  {"italian", "Italiana", "wine"},
   {"japanese", "Japonesa", "indigo"},
-  {"acai", "Açaí", "uva"}
+  {"acai", "Açaí", "grape"}
 ]
 
 for {key, name, color} <- categories do
@@ -217,7 +217,7 @@ unless Repo.get_by(Operator, email: dev_email) do
   Dev operator created:
     e-mail: #{dev_email}
     senha:  senha-dev-freguesia-2026
-    2FA is set up on the first login at /admin/entrar.
+    2FA is set up on the first login at /admin/sign-in.
   """)
 end
 

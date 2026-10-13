@@ -7,7 +7,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
   alias Freguesia.{Admin, Fixtures, Repo}
   alias Freguesia.Admin.Operator
 
-  defp login_path, do: ~p"/admin/entrar"
+  defp login_path, do: ~p"/admin/sign-in"
 
   # Operator with 2FA already set up: skips enrollment and logs in fully.
   defp logged_in_conn(conn) do
@@ -22,14 +22,14 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
         "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
       })
 
-    assert redirected_to(conn) == ~p"/admin/entrar/codigo"
+    assert redirected_to(conn) == ~p"/admin/sign-in/code"
 
     conn =
-      post(conn, ~p"/admin/entrar/codigo", %{
+      post(conn, ~p"/admin/sign-in/code", %{
         "totp" => %{"code" => NimbleTOTP.verification_code(operator.totp_secret)}
       })
 
-    assert redirected_to(conn) == ~p"/admin/verificacoes"
+    assert redirected_to(conn) == ~p"/admin/verifications"
     {conn, operator}
   end
 
@@ -70,9 +70,9 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
           "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
         })
 
-      assert redirected_to(conn) == ~p"/admin/entrar/cadastrar-2fa"
+      assert redirected_to(conn) == ~p"/admin/sign-in/2fa-setup"
 
-      html = conn |> recycle() |> get(~p"/admin/entrar/cadastrar-2fa") |> html_response(200)
+      html = conn |> recycle() |> get(~p"/admin/sign-in/2fa-setup") |> html_response(200)
       assert html =~ "totp-qr"
       assert html =~ "totp-secret"
     end
@@ -87,35 +87,35 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
           "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
         })
 
-      conn = conn |> recycle() |> get(~p"/admin/entrar/cadastrar-2fa")
+      conn = conn |> recycle() |> get(~p"/admin/sign-in/2fa-setup")
 
       wrong =
         conn
         |> recycle()
-        |> post(~p"/admin/entrar/cadastrar-2fa", %{"totp" => %{"code" => "000000"}})
+        |> post(~p"/admin/sign-in/2fa-setup", %{"totp" => %{"code" => "000000"}})
 
-      assert redirected_to(wrong) == ~p"/admin/entrar/cadastrar-2fa"
+      assert redirected_to(wrong) == ~p"/admin/sign-in/2fa-setup"
 
       secret = Repo.get!(Operator, operator.id).totp_secret
       code = NimbleTOTP.verification_code(secret)
 
-      ok = recycle(wrong) |> post(~p"/admin/entrar/cadastrar-2fa", %{"totp" => %{"code" => code}})
-      assert redirected_to(ok) == ~p"/admin/verificacoes"
+      ok = recycle(wrong) |> post(~p"/admin/sign-in/2fa-setup", %{"totp" => %{"code" => code}})
+      assert redirected_to(ok) == ~p"/admin/verifications"
       assert Repo.get!(Operator, operator.id).totp_confirmed_at
     end
 
     test "queue is protected: without login, redirects to the login form", %{conn: conn} do
-      assert redirected_to(get(conn, ~p"/admin/verificacoes")) == login_path()
-      assert {:error, {:redirect, %{to: "/admin/entrar"}}} = live(conn, ~p"/admin/verificacoes")
+      assert redirected_to(get(conn, ~p"/admin/verifications")) == login_path()
+      assert {:error, {:redirect, %{to: "/admin/sign-in"}}} = live(conn, ~p"/admin/verifications")
     end
 
     test "logout ends the session", %{conn: conn} do
       {conn, _operator} = logged_in_conn(conn)
 
-      conn = delete(conn, ~p"/admin/sair")
+      conn = delete(conn, ~p"/admin/sign-out")
       assert redirected_to(conn) == login_path()
 
-      assert redirected_to(get(recycle(conn), ~p"/admin/verificacoes")) == login_path()
+      assert redirected_to(get(recycle(conn), ~p"/admin/verifications")) == login_path()
     end
   end
 
@@ -124,10 +124,10 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
 
-      {:ok, view, _html} = live(conn, ~p"/admin/verificacoes")
+      {:ok, view, _html} = live(conn, ~p"/admin/verifications")
       assert has_element?(view, "#requests", "Pedido Pendente")
 
-      {:ok, detail, html} = live(conn, ~p"/admin/verificacoes/#{request.id}")
+      {:ok, detail, html} = live(conn, ~p"/admin/verifications/#{request.id}")
       assert html =~ "Checagens automáticas"
       assert has_element?(detail, "#check-code")
       assert has_element?(detail, "#check-in_pilot")
@@ -141,7 +141,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     } do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
-      {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
+      {:ok, detail, _} = live(conn, ~p"/admin/verifications/#{request.id}")
 
       html = detail |> form("#approve-form", decision: %{note: ""}) |> render_submit()
       assert html =~ "Uma checagem não passou"
@@ -151,7 +151,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     test "approving with a note publishes the place and goes back to the queue", %{conn: conn} do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
-      {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
+      {:ok, detail, _} = live(conn, ~p"/admin/verifications/#{request.id}")
 
       result =
         detail
@@ -168,7 +168,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     } do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
-      {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
+      {:ok, detail, _} = live(conn, ~p"/admin/verifications/#{request.id}")
 
       html = detail |> form("#changes-form", decision: %{reason: "  "}) |> render_submit()
       assert html =~ "Escreva o motivo para continuar"
@@ -184,7 +184,7 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     test "rejecting requires a reason", %{conn: conn} do
       request = pending_request!()
       {conn, _operator} = logged_in_conn(conn)
-      {:ok, detail, _} = live(conn, ~p"/admin/verificacoes/#{request.id}")
+      {:ok, detail, _} = live(conn, ~p"/admin/verifications/#{request.id}")
 
       result =
         detail
@@ -199,8 +199,8 @@ defmodule FreguesiaWeb.Admin.AdminFlowTest do
     test "nonexistent request goes back to the queue", %{conn: conn} do
       {conn, _operator} = logged_in_conn(conn)
 
-      assert {:error, {:live_redirect, %{to: "/admin/verificacoes"}}} =
-               live(conn, ~p"/admin/verificacoes/#{Ecto.UUID.generate()}")
+      assert {:error, {:live_redirect, %{to: "/admin/verifications"}}} =
+               live(conn, ~p"/admin/verifications/#{Ecto.UUID.generate()}")
     end
   end
 end
