@@ -62,6 +62,11 @@ defmodule FreguesiaWeb.Layouts do
       </main>
 
       <footer class="border-t border-line px-4 py-6 text-center text-xs leading-relaxed text-muted">
+        <nav aria-label={gettext("Legal")} class="mb-3 flex justify-center gap-4 font-bold">
+          <.link navigate={~p"/terms"}>Termos</.link>
+          <.link navigate={~p"/privacy"}>Privacidade</.link>
+          <.link navigate={~p"/how-we-calculate"}>Como calculamos</.link>
+        </nav>
         {gettext(
           "Freguesia is a catalog: we don't sell, don't charge and don't deliver orders. Price, payment and delivery are arranged directly with the business."
         )}
@@ -132,6 +137,18 @@ defmodule FreguesiaWeb.Layouts do
               Freguesia <span class="font-normal text-muted">· {gettext("backoffice")}</span>
             </span>
             <nav :if={@operator} aria-label="Backoffice" class="flex gap-1 text-sm font-semibold">
+              <.link
+                navigate={~p"/admin/places"}
+                class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"
+              >
+                {gettext("Places")}
+              </.link>
+              <.link
+                navigate={~p"/admin/complaints"}
+                class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"
+              >
+                {gettext("Complaints")}
+              </.link>
               <.link
                 navigate={~p"/admin/verifications"}
                 class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"

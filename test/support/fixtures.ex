@@ -163,6 +163,15 @@ defmodule Freguesia.Fixtures do
     "(31) 9" <> digits
   end
 
+  @doc "An opening record for a place, used where a report needs a parent opening."
+  def open_for!(place) do
+    Repo.insert!(%Freguesia.Reports.Open{
+      place_id: place.id,
+      device_id: Ecto.UUID.generate(),
+      opened_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+  end
+
   defp get_or_insert(schema, match, attrs) do
     case Repo.get_by(schema, match) do
       nil -> Repo.insert!(struct(schema, Map.merge(match, attrs)))
