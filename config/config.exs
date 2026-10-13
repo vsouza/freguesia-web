@@ -16,6 +16,11 @@ config :freguesia,
 # Public address, used in message links (e.g. the place page)
 config :freguesia, :public_url, "http://localhost:4000"
 
+# Local photo storage (PRD §10). Production points this to a mounted volume,
+# through the PHOTO_DIR variable in config/runtime.exs. S3-compatible storage
+# replaces it later.
+config :freguesia, :photo_dir, Path.expand("../priv/uploads/photos", __DIR__)
+
 # Opening hours are computed in America/Sao_Paulo (PRD §6 and §8)
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 

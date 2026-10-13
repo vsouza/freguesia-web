@@ -7,7 +7,7 @@ defmodule FreguesiaWeb.Admin.PlaceLive do
 
   import Ecto.Query, only: [from: 2]
 
-  alias Freguesia.{Admin, Backoffice, Repo}
+  alias Freguesia.{Admin, Backoffice, Photos, Repo}
   alias Freguesia.Reports.Report
 
   @impl true
@@ -20,7 +20,15 @@ defmodule FreguesiaWeb.Admin.PlaceLive do
          |> push_navigate(to: ~p"/admin/places")}
 
       place ->
-        {:ok, socket |> assign(page_title: place.name) |> load(place)}
+        {:ok,
+         socket
+         |> assign(page_title: place.name)
+         |> allow_upload(:photo,
+           accept: ~w(.jpg .jpeg .png .webp),
+           max_entries: 1,
+           max_file_size: Photos.max_bytes()
+         )
+         |> load(place)}
     end
   end
 
@@ -65,6 +73,32 @@ defmodule FreguesiaWeb.Admin.PlaceLive do
     end
   end
 
+  def handle_event("validate_photo", _params, socket), do: {:noreply, socket}
+
+  def handle_event("save_photo", _params, socket) do
+    place = socket.assigns.place
+
+    results =
+      consume_uploaded_entries(socket, :photo, fn %{path: path}, _entry ->
+        {:ok, path |> File.read!() |> Photos.store()}
+      end)
+
+    case results do
+      [{:ok, key}] ->
+        {:ok, place} = Backoffice.replace_photo(place, socket.assigns.operator, key)
+        {:noreply, socket |> put_flash(:info, gettext("Photo saved.")) |> load(place)}
+
+      [{:error, :unsupported_type}] ->
+        {:noreply, put_flash(socket, :error, gettext("Use a JPG, PNG or WebP photo."))}
+
+      [{:error, :too_large}] ->
+        {:noreply, put_flash(socket, :error, gettext("The photo is larger than 5 MB."))}
+
+      [] ->
+        {:noreply, put_flash(socket, :error, gettext("Choose a photo first."))}
+    end
+  end
+
   def handle_event("release", %{"id" => id}, socket) do
     report = Repo.get!(Report, id)
     {:ok, _} = Backoffice.release_report(report, socket.assigns.operator)
@@ -86,6 +120,10 @@ defmodule FreguesiaWeb.Admin.PlaceLive do
       audit: Admin.audit_entries("place", place.id)
     )
   end
+
+  defp upload_error_message(:too_large), do: gettext("The photo is larger than 5 MB.")
+  defp upload_error_message(:not_accepted), do: gettext("Use a JPG, PNG or WebP photo.")
+  defp upload_error_message(_other), do: gettext("This file could not be uploaded.")
 
   defp segment_categories(segment_id) do
     Repo.all(
@@ -171,6 +209,34 @@ defmodule FreguesiaWeb.Admin.PlaceLive do
                 </p>
               </div>
             </div>
+          </section>
+
+          <section id="photo" class="rounded-card border border-line bg-white p-6">
+            <h2 class="text-lg font-extrabold">{gettext("Photo")}</h2>
+            <img
+              :if={@place.photo_key}
+              src={~p"/photos/#{@place.photo_key}"}
+              alt={gettext("Photo of %{name}", name: @place.name)}
+              class="mt-3 max-h-56 rounded-tile object-cover"
+            />
+            <p :if={!@place.photo_key} class="mt-2 text-sm text-ink-2">{gettext("No photo yet.")}</p>
+            <form
+              id="photo-form"
+              phx-change="validate_photo"
+              phx-submit="save_photo"
+              class="mt-4 flex flex-col gap-3"
+            >
+              <.live_file_input upload={@uploads.photo} class="text-sm" />
+              <p :for={err <- upload_errors(@uploads.photo)} class="text-sm text-tomato-600">
+                {upload_error_message(err)}
+              </p>
+              <button
+                type="submit"
+                class="self-start rounded-full bg-ink px-5 py-2 font-bold text-white"
+              >
+                {gettext("Save photo")}
+              </button>
+            </form>
           </section>
 
           <section id="held-reports" class="rounded-card border border-line bg-white p-6">

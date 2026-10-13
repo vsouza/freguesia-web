@@ -41,5 +41,8 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# Photos go to a temporary directory during tests
+config :freguesia, :photo_dir, Path.join(System.tmp_dir!(), "freguesia-test-photos")
+
 # Jobs run inline in tests; the message lands in the Fake and can be read.
 config :freguesia, Oban, testing: :inline

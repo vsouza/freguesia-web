@@ -46,6 +46,7 @@ defmodule FreguesiaWeb.Router do
   # Liveness probe for deploys: no session, no CSRF.
   scope "/", FreguesiaWeb do
     get "/health", HealthController, :index
+    get "/photos/:key", PhotoController, :show
   end
 
   scope "/", FreguesiaWeb do
