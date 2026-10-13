@@ -1,0 +1,179 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+msgid "can't be blank"
+msgstr "não pode ficar em branco"
+
+msgid "has already been taken"
+msgstr "já está em uso"
+
+msgid "is invalid"
+msgstr "é inválido"
+
+msgid "must be accepted"
+msgstr "precisa ser aceito"
+
+msgid "has invalid format"
+msgstr "tem formato inválido"
+
+msgid "has an invalid entry"
+msgstr "tem um item inválido"
+
+msgid "is reserved"
+msgstr "é reservado"
+
+msgid "does not match confirmation"
+msgstr "não corresponde à confirmação"
+
+msgid "is still associated with this entry"
+msgstr "ainda está associado a este registro"
+
+msgid "are still associated with this entry"
+msgstr "ainda estão associados a este registro"
+
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] "should have %{count} item(s)"
+msgstr[1] "should have %{count} item(s)"
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] "should be %{count} character(s)"
+msgstr[1] "should be %{count} character(s)"
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] "should be %{count} byte(s)"
+msgstr[1] "should be %{count} byte(s)"
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] "should have at least %{count} item(s)"
+msgstr[1] "should have at least %{count} item(s)"
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] "should be at least %{count} character(s)"
+msgstr[1] "should be at least %{count} character(s)"
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] "should be at least %{count} byte(s)"
+msgstr[1] "should be at least %{count} byte(s)"
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] "should have at most %{count} item(s)"
+msgstr[1] "should have at most %{count} item(s)"
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] "should be at most %{count} character(s)"
+msgstr[1] "should be at most %{count} character(s)"
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] "should be at most %{count} byte(s)"
+msgstr[1] "should be at most %{count} byte(s)"
+
+msgid "must be less than %{number}"
+msgstr "deve ser menor que %{number}"
+
+msgid "must be greater than %{number}"
+msgstr "deve ser maior que %{number}"
+
+msgid "must be less than or equal to %{number}"
+msgstr "deve ser menor ou igual a %{number}"
+
+msgid "must be greater than or equal to %{number}"
+msgstr "deve ser maior ou igual a %{number}"
+
+msgid "must be equal to %{number}"
+msgstr "deve ser igual a %{number}"
+
+#: lib/freguesia/verification/signup.ex:56
+#, elixir-autogen, elixir-format
+msgid "accept the terms to continue"
+msgstr "aceite os termos para continuar"
+
+#: lib/freguesia/verification.ex:319
+#, elixir-autogen, elixir-format
+msgid "choose the type of food"
+msgstr "escolha o tipo de comida"
+
+#: lib/freguesia/admin/operator.ex:31
+#, elixir-autogen, elixir-format
+msgid "invalid email"
+msgstr "e-mail inválido"
+
+#: lib/freguesia/verification.ex:309
+#, elixir-autogen, elixir-format
+msgid "invalid type"
+msgstr "tipo inválido"
+
+#: lib/freguesia/verification.ex:323
+#, elixir-autogen, elixir-format
+msgid "invalid type of food"
+msgstr "tipo de comida inválido"
+
+#: lib/freguesia/verification/signup.ex:47
+#, elixir-autogen, elixir-format
+msgid "is required"
+msgstr "obrigatório"
+
+#: lib/freguesia/verification.ex:358
+#, elixir-autogen, elixir-format
+msgid "neighborhood outside the pilot"
+msgstr "bairro fora do piloto"
+
+#: lib/freguesia/verification.ex:345
+#, elixir-autogen, elixir-format
+msgid "outside the pilot for now"
+msgstr "fora do piloto por enquanto"
+
+#: lib/freguesia/verification.ex:410
+#, elixir-autogen, elixir-format
+msgid "this number can only try again from %{date}"
+msgstr "este número só pode tentar de novo a partir de %{date}"
+
+#: lib/freguesia/verification.ex:395
+#, elixir-autogen, elixir-format
+msgid "this number is already in the catalog"
+msgstr "este número já está no catálogo"
+
+#: lib/freguesia/catalog/place.ex:64
+#, elixir-autogen, elixir-format
+msgid "this number is already registered"
+msgstr "este número já está cadastrado"
+
+#: lib/freguesia/verification/signup.ex:53
+#, elixir-autogen, elixir-format
+msgid "up to 80 characters"
+msgstr "até 80 caracteres"
+
+#: lib/freguesia/catalog/place.ex:58
+#: lib/freguesia/verification.ex:373
+#: lib/freguesia/verification/signup.ex:64
+#, elixir-autogen, elixir-format
+msgid "use a Brazilian WhatsApp number with area code"
+msgstr "use um WhatsApp brasileiro com DDD"
+
+#: lib/freguesia/admin/operator.ex:36
+#, elixir-autogen, elixir-format
+msgid "use between 12 and 72 characters"
+msgstr "use entre 12 e 72 caracteres"
+
+#: lib/freguesia/verification/signup.ex:51
+#, elixir-autogen, elixir-format
+msgid "use between 3 and 60 characters"
+msgstr "use entre 3 e 60 caracteres"

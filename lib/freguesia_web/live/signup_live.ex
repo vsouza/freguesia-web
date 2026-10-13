@@ -18,7 +18,7 @@ defmodule FreguesiaWeb.SignupLive do
     {:ok,
      socket
      |> assign(
-       page_title: "Cadastrar lugar",
+       page_title: gettext("Register a place"),
        step: 1,
        segments: segments,
        neighborhoods: Catalog.list_pilot_neighborhoods(),
@@ -67,15 +67,16 @@ defmodule FreguesiaWeb.SignupLive do
   def handle_event("resend_code", _params, socket) do
     case Verification.resend_code(socket.assigns.place.id) do
       {:ok, _code} ->
-        {:noreply, assign(socket, code_error: nil, code_notice: "Enviamos um novo código.")}
+        {:noreply, assign(socket, code_error: nil, code_notice: gettext("We sent a new code."))}
 
       {:error, :too_soon} ->
-        {:noreply, assign(socket, code_error: "Espere 60 segundos para pedir outro código.")}
+        {:noreply,
+         assign(socket, code_error: gettext("Wait 60 seconds before requesting another code."))}
 
       {:error, _delivery_failed} ->
         {:noreply,
          assign(socket,
-           code_error: "Ainda não conseguimos enviar. Tente de novo em instantes."
+           code_error: gettext("We still can't send it. Try again in a moment.")
          )}
     end
   end
@@ -84,9 +85,14 @@ defmodule FreguesiaWeb.SignupLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <p class="text-xs font-bold uppercase tracking-wide text-muted">Passo {@step} de 3</p>
+      <p class="text-xs font-bold uppercase tracking-wide text-muted">
+        {gettext("Step %{step} of 3", step: @step)}
+      </p>
       <div class="mt-3 mb-8">
-        <FreguesiaWeb.Components.two_line_title first="Cadastre seu" second="lugar." />
+        <FreguesiaWeb.Components.two_line_title
+          first={gettext("Register your")}
+          second={gettext("place.")}
+        />
       </div>
 
       <.step_data
@@ -139,16 +145,16 @@ defmodule FreguesiaWeb.SignupLive do
       <.input
         field={@form[:name]}
         type="text"
-        label="Nome do negócio"
+        label={gettext("Business name")}
         autocomplete="organization"
-        placeholder="Ex.: Pizzaria do Zé"
+        placeholder={gettext("E.g.: Pizzaria do Zé")}
       />
 
       <.input
         field={@form[:segment_id]}
         type="select"
-        label="Tipo"
-        prompt="Escolha"
+        label={gettext("Type")}
+        prompt={gettext("Choose")}
         options={Enum.map(@segments, &{&1.name, &1.id})}
       />
 
@@ -156,15 +162,15 @@ defmodule FreguesiaWeb.SignupLive do
         :if={@restaurant?}
         field={@form[:category_id]}
         type="select"
-        label="Tipo de comida"
-        prompt="Escolha"
+        label={gettext("Type of food")}
+        prompt={gettext("Choose")}
         options={Enum.map(@categories, &{&1.name, &1.id})}
       />
 
       <.input
         field={@form[:whatsapp]}
         type="tel"
-        label="WhatsApp do negócio"
+        label={gettext("Business WhatsApp")}
         placeholder="(31) 99999-9999"
         inputmode="tel"
         autocomplete="tel"
@@ -173,20 +179,22 @@ defmodule FreguesiaWeb.SignupLive do
       <.input
         field={@form[:neighborhood_id]}
         type="select"
-        label="Bairro do negócio"
-        prompt="Escolha"
+        label={gettext("Business neighborhood")}
+        prompt={gettext("Choose")}
         options={Enum.map(@neighborhoods, &{&1.name, &1.id})}
       />
 
       <.input
         field={@form[:delivery_mode]}
         type="select"
-        label="Entrega"
-        options={[{"Entrega própria", "own"}, {"Motoboy parceiro", "partner"}]}
+        label={gettext("Delivery")}
+        options={[{gettext("Own delivery"), "own"}, {gettext("Partner courier"), "partner"}]}
       />
 
       <fieldset class="mb-3">
-        <legend class="mb-2 ml-1 text-sm font-semibold text-ink-2">Bairros atendidos</legend>
+        <legend class="mb-2 ml-1 text-sm font-semibold text-ink-2">
+          {gettext("Neighborhoods served")}
+        </legend>
         <div class="grid grid-cols-2 gap-2">
           <label
             :for={neighborhood <- @neighborhoods}
@@ -212,22 +220,22 @@ defmodule FreguesiaWeb.SignupLive do
       <.input
         field={@form[:offer_text]}
         type="text"
-        label="Vantagem para quem pede direto (opcional)"
+        label={gettext("Offer for direct orders (optional)")}
         placeholder="Ex.: 10% off no pedido direto"
         maxlength="80"
       />
       <p class="-mt-2 mb-3 ml-1 text-xs text-muted">
-        Até 80 caracteres. Não cite outros apps: a vantagem passa por moderação.
+        {gettext("Up to 80 characters. Don't mention other apps: the offer goes through moderation.")}
       </p>
 
       <.input
         field={@form[:accept_terms]}
         type="checkbox"
-        label="Li e aceito os termos de uso e a política de privacidade"
+        label={gettext("I have read and accept the terms of use and the privacy policy")}
       />
 
       <div class="mt-4">
-        <.button type="submit" id="signup-submit" class="w-full">Continuar</.button>
+        <.button type="submit" id="signup-submit" class="w-full">{gettext("Continue")}</.button>
       </div>
     </.form>
     """
@@ -243,11 +251,13 @@ defmodule FreguesiaWeb.SignupLive do
     ~H"""
     <div class="flex flex-col gap-5">
       <p class="text-base text-ink-2">
-        Enviamos um código de 6 dígitos para o WhatsApp terminado em <span class="font-bold text-ink">{String.slice(@place.whatsapp_e164, -4..-1//1)}</span>.
+        {gettext("We sent a 6-digit code to the WhatsApp ending in")} <span class="font-bold text-ink">{String.slice(@place.whatsapp_e164, -4..-1//1)}</span>.
       </p>
 
       <.warning_box :if={@delivery == :failed}>
-        Não conseguimos enviar o código agora. Vamos mandar em instantes; se não chegar, peça de novo daqui a pouco.
+        {gettext(
+          "We couldn't send the code right now. We'll send it shortly; if it doesn't arrive, request it again in a little while."
+        )}
       </.warning_box>
 
       <.warning_box :if={@code_error}>{@code_error}</.warning_box>
@@ -258,7 +268,7 @@ defmodule FreguesiaWeb.SignupLive do
         <.input
           field={@code_form[:code]}
           type="text"
-          label="Código"
+          label={gettext("Code")}
           inputmode="numeric"
           autocomplete="one-time-code"
           maxlength="6"
@@ -266,9 +276,9 @@ defmodule FreguesiaWeb.SignupLive do
           id="code-input"
         />
         <div class="mt-3 flex flex-col gap-3">
-          <.button type="submit" id="confirm-code">Confirmar</.button>
+          <.button type="submit" id="confirm-code">{gettext("Confirm")}</.button>
           <.button type="button" variant="outline" id="resend-code" phx-click="resend_code">
-            Reenviar código
+            {gettext("Resend code")}
           </.button>
         </div>
       </.form>
@@ -282,21 +292,27 @@ defmodule FreguesiaWeb.SignupLive do
     ~H"""
     <div id="signup-done" class="flex flex-col gap-5">
       <div class="rounded-card bg-sand p-6">
-        <p class="text-lg font-extrabold text-ink">Recebemos o cadastro de {@place.name}.</p>
+        <p class="text-lg font-extrabold text-ink">
+          {gettext("We received the registration of %{name}.", name: @place.name)}
+        </p>
         <p class="mt-2 text-sm text-ink-2">
-          Em análise, até 1 dia útil. A resposta chega no WhatsApp desse número.
+          {gettext(
+            "Under review, up to 1 business day. The answer arrives on this number's WhatsApp."
+          )}
         </p>
       </div>
 
       <p class="text-sm text-muted">
-        Só aparecemos no catálogo depois da aprovação. Você não precisa fazer mais nada agora.
+        {gettext(
+          "We only appear in the catalog after approval. You don't need to do anything else right now."
+        )}
       </p>
 
       <.link
-        navigate={~p"/bairro/savassi"}
+        navigate={~p"/areas/savassi"}
         class="text-sm font-bold text-ink underline underline-offset-4"
       >
-        Voltar ao catálogo
+        {gettext("Back to the catalog")}
       </.link>
     </div>
     """
@@ -320,9 +336,16 @@ defmodule FreguesiaWeb.SignupLive do
 
   defp code_error_message({:invalid_code, remaining}),
     do:
-      "Código incorreto. Você tem mais #{remaining} tentativa#{if remaining == 1, do: "", else: "s"}."
+      ngettext(
+        "Wrong code. You have %{count} more attempt.",
+        "Wrong code. You have %{count} more attempts.",
+        remaining,
+        count: remaining
+      )
 
-  defp code_error_message(:too_many_attempts), do: "Tentativas esgotadas. Peça um código novo."
-  defp code_error_message(:expired), do: "Esse código expirou. Peça um novo."
-  defp code_error_message(:no_code), do: "Peça um código para continuar."
+  defp code_error_message(:too_many_attempts),
+    do: gettext("Too many attempts. Request a new code.")
+
+  defp code_error_message(:expired), do: gettext("This code has expired. Request a new one.")
+  defp code_error_message(:no_code), do: gettext("Request a code to continue.")
 end

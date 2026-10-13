@@ -4,16 +4,18 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
 
   alias Freguesia.Verification
 
-  @filters [
-    {:pending, "Novos"},
-    {:in_review, "Em análise"},
-    {:needs_changes, "Aguardando ajuste"},
-    {:all, "Todos"}
-  ]
+  defp filters do
+    [
+      {:pending, gettext("New requests")},
+      {:in_review, gettext("Under review")},
+      {:needs_changes, gettext("Awaiting adjustment")},
+      {:all, gettext("All")}
+    ]
+  end
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, page_title: "Verificações", filters: @filters)}
+    {:ok, assign(socket, page_title: gettext("Verifications"), filters: filters())}
   end
 
   @impl true
@@ -37,11 +39,11 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
     <Layouts.admin flash={@flash} operator={@operator}>
       <div class="flex flex-col gap-6">
         <header class="flex flex-wrap items-end justify-between gap-4">
-          <h1 class="text-2xl font-extrabold tracking-tight">Verificações</h1>
-          <nav aria-label="Filtros" class="flex flex-wrap gap-2">
+          <h1 class="text-2xl font-extrabold tracking-tight">{gettext("Verifications")}</h1>
+          <nav aria-label={gettext("Filters")} class="flex flex-wrap gap-2">
             <.link
               :for={{key, label} <- @filters}
-              patch={~p"/admin/verificacoes?filter=#{key}"}
+              patch={~p"/admin/verifications?filter=#{key}"}
               aria-current={@filter == key && "page"}
               class={[
                 "rounded-full px-4 py-2 text-sm font-bold transition",
@@ -57,8 +59,8 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
 
         <div id="requests" phx-update="stream" class="flex flex-col gap-3">
           <div id="requests-empty" class="hidden only:block">
-            <.empty_state title="Nada para decidir agora">
-              Quando um restaurante confirmar o WhatsApp, o pedido aparece aqui.
+            <.empty_state title={gettext("Nothing to decide right now")}>
+              {gettext("When a business confirms its WhatsApp, the request shows up here.")}
             </.empty_state>
           </div>
 
@@ -74,8 +76,9 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
               </p>
               <h2 class="truncate text-lg font-extrabold">{request.place.name}</h2>
               <p class="text-sm text-ink-2">
-                {request.place.neighborhood.name} · {request.place.whatsapp_e164} · recebido {time_ago(
-                  request.inserted_at
+                {request.place.neighborhood.name} · {request.place.whatsapp_e164} · {gettext(
+                  "received %{time}",
+                  time: time_ago(request.inserted_at)
                 )}
               </p>
             </div>
@@ -83,10 +86,10 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
             <div class="flex items-center gap-3">
               <.status_badge status={request.status} />
               <.link
-                navigate={~p"/admin/verificacoes/#{request.id}"}
+                navigate={~p"/admin/verifications/#{request.id}"}
                 class="rounded-full bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-2"
               >
-                Analisar
+                {gettext("Review")}
               </.link>
             </div>
           </div>
@@ -120,20 +123,20 @@ defmodule FreguesiaWeb.Admin.VerificationsLive do
   defp count_for(counts, :all), do: counts |> Map.values() |> Enum.sum()
   defp count_for(counts, key), do: Map.get(counts, key, 0)
 
-  defp status_label(:pending), do: "Novo"
-  defp status_label(:in_review), do: "Em análise"
-  defp status_label(:needs_changes), do: "Aguardando ajuste"
-  defp status_label(:approved), do: "Aprovado"
-  defp status_label(:rejected), do: "Recusado"
+  defp status_label(:pending), do: gettext("New")
+  defp status_label(:in_review), do: gettext("Under review")
+  defp status_label(:needs_changes), do: gettext("Awaiting adjustment")
+  defp status_label(:approved), do: gettext("Approved")
+  defp status_label(:rejected), do: gettext("Rejected")
 
   defp time_ago(datetime) do
     minutes = DateTime.diff(DateTime.utc_now(), datetime, :second) |> div(60)
 
     cond do
-      minutes < 1 -> "agora"
-      minutes < 60 -> "há #{minutes} min"
-      minutes < 60 * 24 -> "há #{div(minutes, 60)} h"
-      true -> "há #{div(minutes, 60 * 24)} d"
+      minutes < 1 -> gettext("now")
+      minutes < 60 -> gettext("%{count} min ago", count: minutes)
+      minutes < 60 * 24 -> gettext("%{count} h ago", count: div(minutes, 60))
+      true -> gettext("%{count} d ago", count: div(minutes, 60 * 24))
     end
   end
 end

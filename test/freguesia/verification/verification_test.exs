@@ -189,7 +189,7 @@ defmodule Freguesia.VerificationTest do
       [message] =
         Fake.sent_to(place.whatsapp_e164) |> Enum.filter(&(&1.template == "place_approved"))
 
-      assert message.params["url"] =~ "/lugar/"
+      assert message.params["url"] =~ "/places/"
     end
 
     test "approving again is idempotent: no second message or audit entry" do

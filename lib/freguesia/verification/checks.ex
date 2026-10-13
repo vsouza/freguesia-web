@@ -6,7 +6,7 @@ defmodule Freguesia.Verification.Checks do
     * `profile_name`: the WhatsApp Business profile name matches the one provided
       (similarity ≥ 0.8). `pending` until the profile is read.
     * `in_pilot`: the business neighborhood is in the pilot
-    * `no_reports`: there are no open complaints
+    * `no_complaints`: there are no open complaints
 
   Values: `"ok"`, `"fail"` or `"pending"`.
   """
@@ -22,7 +22,7 @@ defmodule Freguesia.Verification.Checks do
       "code" => "ok",
       "profile_name" => profile_name(place),
       "in_pilot" => if(place.neighborhood.pilot, do: "ok", else: "fail"),
-      "no_reports" => if(open_complaints?, do: "fail", else: "ok")
+      "no_complaints" => if(open_complaints?, do: "fail", else: "ok")
     }
   end
 

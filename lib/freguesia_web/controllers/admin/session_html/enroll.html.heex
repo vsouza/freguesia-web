@@ -1,11 +1,14 @@
 <Layouts.admin flash={@flash}>
   <div class="mx-auto mt-10 flex max-w-md flex-col gap-6 rounded-card bg-white p-8 shadow-card">
     <div>
-      <p class="text-xs font-bold uppercase tracking-wide text-muted">Primeiro acesso</p>
-      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">Cadastre o app</h1>
+      <p class="text-xs font-bold uppercase tracking-wide text-muted">
+        {gettext("First access")}
+      </p>
+      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">{gettext("Register the app")}</h1>
       <p class="mt-2 text-sm text-ink-2">
-        O 2FA é obrigatório no backoffice. Escaneie o QR com um app autenticador
-        (Google Authenticator, 1Password, Authy) e digite o código que ele mostrar.
+        {gettext(
+          "2FA is required in the backoffice. Scan the QR code with an authenticator app (Google Authenticator, 1Password, Authy) and enter the code it shows."
+        )}
       </p>
     </div>
 
@@ -14,11 +17,11 @@
         id="totp-qr"
         class="rounded-tile bg-white p-3 ring-1 ring-line"
         role="img"
-        aria-label="QR code para o app autenticador"
+        aria-label={gettext("QR code for the authenticator app")}
       >
         <.qr_code svg={@qr_svg} />
       </div>
-      <p class="text-xs text-muted">Sem câmera? Digite a chave:</p>
+      <p class="text-xs text-muted">{gettext("No camera? Enter the key:")}</p>
       <code
         id="totp-secret"
         class="rounded-tile bg-sand px-3 py-2 text-sm font-bold tracking-wider"
@@ -30,20 +33,22 @@
     <.form
       for={@form}
       id="enroll-form"
-      action={~p"/admin/entrar/cadastrar-2fa"}
+      action={~p"/admin/sign-in/2fa-setup"}
       class="flex flex-col gap-1"
     >
       <.input
         field={@form[:code]}
         type="text"
-        label="Código do app"
+        label={gettext("App code")}
         inputmode="numeric"
         autocomplete="one-time-code"
         maxlength="6"
         required
       />
       <div class="mt-3">
-        <.button type="submit" id="enroll-submit" class="w-full">Confirmar e entrar</.button>
+        <.button type="submit" id="enroll-submit" class="w-full">
+          {gettext("Confirm and sign in")}
+        </.button>
       </div>
     </.form>
   </div>

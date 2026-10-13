@@ -9,15 +9,15 @@ defmodule FreguesiaWeb.LoopTest do
   alias Freguesia.Reports.{Complaint, Open, Report, Stats}
 
   defp visit(conn, place) do
-    conn = get(conn, ~p"/lugar/#{place.slug}")
+    conn = get(conn, ~p"/places/#{place.slug}")
     {conn, Plug.Conn.get_session(conn, "device_id")}
   end
 
-  describe "GET /r/:slug" do
+  describe "GET /places/:slug/whatsapp" do
     test "records the opening and redirects to the place's wa.me link" do
       place = Fixtures.verified_place(%{whatsapp_e164: "+5531977776666"})
 
-      conn = get(build_conn(), ~p"/r/#{place.slug}")
+      conn = get(build_conn(), ~p"/places/#{place.slug}/whatsapp")
 
       assert redirected_to(conn, 302) =~ "https://wa.me/5531977776666?text="
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 1
@@ -26,11 +26,11 @@ defmodule FreguesiaWeb.LoopTest do
     test "device cookie is created on the first visit and reused afterwards" do
       place = Fixtures.verified_place()
 
-      first = get(build_conn(), ~p"/r/#{place.slug}")
+      first = get(build_conn(), ~p"/places/#{place.slug}/whatsapp")
       device = first.assigns.device_id
       assert device
 
-      second = first |> recycle() |> get(~p"/r/#{place.slug}")
+      second = first |> recycle() |> get(~p"/places/#{place.slug}/whatsapp")
       assert second.assigns.device_id == device
     end
 
@@ -48,9 +48,9 @@ defmodule FreguesiaWeb.LoopTest do
         })
       end
 
-      conn = get(build_conn(), ~p"/r/#{place.slug}")
+      conn = get(build_conn(), ~p"/places/#{place.slug}/whatsapp")
 
-      assert redirected_to(conn) == ~p"/lugar/#{place.slug}"
+      assert redirected_to(conn) == ~p"/places/#{place.slug}"
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 0
     end
 
@@ -60,15 +60,15 @@ defmodule FreguesiaWeb.LoopTest do
           paused_until: DateTime.add(DateTime.utc_now() |> DateTime.truncate(:second), 3600)
         })
 
-      conn = get(build_conn(), ~p"/r/#{place.slug}")
+      conn = get(build_conn(), ~p"/places/#{place.slug}/whatsapp")
 
-      assert redirected_to(conn) == ~p"/lugar/#{place.slug}"
+      assert redirected_to(conn) == ~p"/places/#{place.slug}"
       assert Repo.aggregate(from(o in Open, where: o.place_id == ^place.id), :count) == 0
     end
 
     test "place not in the catalog redirects to the neighborhood" do
-      conn = get(build_conn(), ~p"/r/nao-existe")
-      assert redirected_to(conn) == ~p"/bairro/savassi"
+      conn = get(build_conn(), ~p"/places/nao-existe/whatsapp")
+      assert redirected_to(conn) == ~p"/areas/savassi"
     end
   end
 
@@ -78,7 +78,7 @@ defmodule FreguesiaWeb.LoopTest do
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       # on entry the sheet already shows; the focus event does not open a second one
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
 
@@ -92,22 +92,25 @@ defmodule FreguesiaWeb.LoopTest do
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
       # Came back through history: the page loads again, with no visibilitychange
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       assert has_element?(view, "#return-sheet", "Conseguiu pedir direto?")
     end
 
     test "the WhatsApp button opens in a new tab, and the original page stays open" do
       place = Fixtures.verified_place()
-      {:ok, view, _html} = live(build_conn(), ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(build_conn(), ~p"/places/#{place.slug}")
 
-      assert has_element?(view, "a#whatsapp-cta[href='/r/#{place.slug}'][target='_blank']")
+      assert has_element?(
+               view,
+               "a#whatsapp-cta[href='/places/#{place.slug}/whatsapp'][target='_blank']"
+             )
     end
 
     test "without a pending opening, the sheet does not appear" do
       place = Fixtures.verified_place()
       {conn, _device} = visit(build_conn(), place)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       render_hook(view, "returned", %{})
 
       refute has_element?(view, "#return-sheet")
@@ -118,7 +121,7 @@ defmodule FreguesiaWeb.LoopTest do
       {conn, device} = visit(build_conn(), place)
       {:ok, open} = Reports.open_whatsapp(place.id, device)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       render_hook(view, "returned", %{})
 
       view |> element("#sheet-yes") |> render_click()
@@ -140,7 +143,7 @@ defmodule FreguesiaWeb.LoopTest do
       {conn, device} = visit(build_conn(), place)
       {:ok, open} = Reports.open_whatsapp(place.id, device)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       render_hook(view, "returned", %{})
 
       view |> element("#sheet-no") |> render_click()
@@ -156,7 +159,7 @@ defmodule FreguesiaWeb.LoopTest do
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       render_hook(view, "returned", %{})
       view |> element("#sheet-no") |> render_click()
       view |> element("#reason-wrong_or_scam") |> render_click()
@@ -169,7 +172,7 @@ defmodule FreguesiaWeb.LoopTest do
       {conn, device} = visit(build_conn(), place)
       {:ok, _open} = Reports.open_whatsapp(place.id, device)
 
-      {:ok, view, _html} = live(conn, ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
       render_hook(view, "returned", %{})
       view |> element("#sheet-later") |> render_click()
 
@@ -198,7 +201,7 @@ defmodule FreguesiaWeb.LoopTest do
       place = Fixtures.verified_place()
       answer_many!(place, 10, "le10")
 
-      {:ok, _view, html} = live(build_conn(), ~p"/lugar/#{place.slug}")
+      {:ok, _view, html} = live(build_conn(), ~p"/places/#{place.slug}")
 
       assert html =~ "a menos, em média, do que nos apps"
       assert html =~ "Relatado por 10 fregueses nos últimos 90 dias. Pode variar."
@@ -209,7 +212,7 @@ defmodule FreguesiaWeb.LoopTest do
       place = Fixtures.verified_place()
       answer_many!(place, 3, "le10")
 
-      {:ok, _view, html} = live(build_conn(), ~p"/lugar/#{place.slug}")
+      {:ok, _view, html} = live(build_conn(), ~p"/places/#{place.slug}")
 
       assert html =~ "Poucos relatos até agora (3)"
       refute html =~ "a menos, em média, do que nos apps"
@@ -219,7 +222,7 @@ defmodule FreguesiaWeb.LoopTest do
       place = Fixtures.verified_place()
       answer_many!(place, 3, "le10")
 
-      {:ok, view, _html} = live(build_conn(), ~p"/lugar/#{place.slug}")
+      {:ok, view, _html} = live(build_conn(), ~p"/places/#{place.slug}")
       assert has_element?(view, "#proof-funcionou", "Funcionou 3/3 em 30 dias")
       refute has_element?(view, "#proof-funcionou [aria-hidden] div")
     end

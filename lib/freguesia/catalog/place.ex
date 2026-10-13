@@ -7,6 +7,8 @@ defmodule Freguesia.Catalog.Place do
   """
   use Freguesia.Schema
 
+  use Gettext, backend: FreguesiaWeb.Gettext
+
   @type t :: %__MODULE__{}
 
   @statuses [:pending, :needs_changes, :rejected, :verified, :paused, :hidden, :removed]
@@ -53,13 +55,13 @@ defmodule Freguesia.Catalog.Place do
     |> validate_required([:name, :segment_id, :neighborhood_id, :whatsapp_e164])
     |> validate_length(:name, min: 3, max: 60)
     |> validate_format(:whatsapp_e164, ~r/^\+55[1-9]\d{9,10}$/,
-      message: "use um WhatsApp brasileiro com DDD"
+      message: dgettext("errors", "use a Brazilian WhatsApp number with area code")
     )
     |> assoc_constraint(:segment)
     |> assoc_constraint(:neighborhood)
     |> unique_constraint(:whatsapp_e164,
       name: :places_whatsapp_e164_index,
-      message: "este número já está cadastrado"
+      message: dgettext("errors", "this number is already registered")
     )
   end
 

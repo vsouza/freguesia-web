@@ -1,6 +1,6 @@
 defmodule FreguesiaWeb.Admin.FakeInboxLive do
   @moduledoc """
-  Fake WhatsApp inbox (`/admin/mensagens-fake`). Shows what the adapter
+  Fake WhatsApp inbox (`/admin/fake-inbox`). Shows what the adapter
   `Freguesia.Messaging.Fake` "sent", including the verification code.
   It only exists with the fake adapter enabled; in production with the real API it stays empty.
   """
@@ -12,7 +12,7 @@ defmodule FreguesiaWeb.Admin.FakeInboxLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(page_title: "Mensagens (fake)", messages: Enum.reverse(Fake.all()))}
+     |> assign(page_title: gettext("Messages (fake)"), messages: Enum.reverse(Fake.all()))}
   end
 
   @impl true
@@ -27,13 +27,13 @@ defmodule FreguesiaWeb.Admin.FakeInboxLive do
     <Layouts.admin flash={@flash} operator={@operator}>
       <div class="mx-auto flex max-w-2xl flex-col gap-4">
         <div class="flex items-center justify-between">
-          <h1 class="text-xl font-extrabold">Mensagens enviadas (fake)</h1>
+          <h1 class="text-xl font-extrabold">{gettext("Messages sent (fake)")}</h1>
           <button id="clear-inbox" phx-click="clear" class="text-sm font-bold underline">
-            Limpar
+            {gettext("Clear")}
           </button>
         </div>
 
-        <p :if={@messages == []} class="text-sm text-muted">Nenhuma mensagem ainda.</p>
+        <p :if={@messages == []} class="text-sm text-muted">{gettext("No messages yet.")}</p>
 
         <div
           :for={message <- @messages}

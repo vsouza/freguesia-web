@@ -1,28 +1,30 @@
 <Layouts.admin flash={@flash}>
   <div class="mx-auto mt-10 flex max-w-sm flex-col gap-6 rounded-card bg-white p-8 shadow-card">
     <div>
-      <p class="text-xs font-bold uppercase tracking-wide text-muted">Segundo passo</p>
-      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">Código do app</h1>
-      <p class="mt-2 text-sm text-ink-2">Digite os 6 dígitos atuais do app autenticador.</p>
+      <p class="text-xs font-bold uppercase tracking-wide text-muted">{gettext("Second step")}</p>
+      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">{gettext("App code")}</h1>
+      <p class="mt-2 text-sm text-ink-2">
+        {gettext("Enter the 6 digits currently shown in the authenticator app.")}
+      </p>
     </div>
 
     <.form
       for={@form}
       id="totp-form"
-      action={~p"/admin/entrar/codigo"}
+      action={~p"/admin/sign-in/code"}
       class="flex flex-col gap-1"
     >
       <.input
         field={@form[:code]}
         type="text"
-        label="Código"
+        label={gettext("Code")}
         inputmode="numeric"
         autocomplete="one-time-code"
         maxlength="6"
         required
       />
       <div class="mt-3">
-        <.button type="submit" id="totp-submit" class="w-full">Entrar</.button>
+        <.button type="submit" id="totp-submit" class="w-full">{gettext("Log in")}</.button>
       </div>
     </.form>
   </div>

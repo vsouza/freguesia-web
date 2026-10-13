@@ -5,6 +5,7 @@ defmodule FreguesiaWeb.Components do
   """
   use Phoenix.Component
   use FreguesiaWeb, :verified_routes
+  use Gettext, backend: FreguesiaWeb.Gettext
 
   import FreguesiaWeb.CoreComponents, only: [icon: 1]
 
@@ -40,7 +41,7 @@ defmodule FreguesiaWeb.Components do
 
     ~H"""
     <.link
-      navigate={~p"/lugar/#{@place.slug}"}
+      navigate={~p"/places/#{@place.slug}"}
       id={"place-card-#{@place.slug}"}
       class={[
         "group relative flex flex-col gap-3 rounded-card p-5 shadow-card transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-ink",
@@ -93,7 +94,7 @@ defmodule FreguesiaWeb.Components do
   def verified_badge(assigns) do
     ~H"""
     <span class="inline-flex flex-none items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-800">
-      <.icon name="hero-check-badge-mini" class="size-4" /> Verificado
+      <.icon name="hero-check-badge-mini" class="size-4" /> {gettext("Verified")}
     </span>
     """
   end
@@ -119,22 +120,22 @@ defmodule FreguesiaWeb.Components do
     ~H"""
     <%= case @status do %>
       <% {:open, closes_at} -> %>
-        <span class="font-bold text-ink">Aberto</span>
-        <span class="ml-1 text-ink-2">· até {closes_at}</span>
+        <span class="font-bold text-ink">{gettext("Open")}</span>
+        <span class="ml-1 text-ink-2">{gettext("· until %{time}", time: closes_at)}</span>
       <% {:closed, nil} -> %>
-        <span class="font-bold text-muted">Fechado</span>
+        <span class="font-bold text-muted">{gettext("Closed")}</span>
       <% {:closed, opens_at} -> %>
-        <span class="font-bold text-muted">Fechado</span>
-        <span class="ml-1 text-muted">· abre às {opens_at}</span>
+        <span class="font-bold text-muted">{gettext("Closed")}</span>
+        <span class="ml-1 text-muted">{gettext("· opens at %{time}", time: opens_at)}</span>
       <% {:paused} -> %>
-        <span class="font-bold text-muted">Sem atender hoje</span>
+        <span class="font-bold text-muted">{gettext("Not taking orders today")}</span>
     <% end %>
     """
   end
 
   defp not_verified_note(assigns) do
     ~H"""
-    <p class="text-xs text-muted">Ainda não verificado pelo restaurante.</p>
+    <p class="text-xs text-muted">{gettext("Not verified by the restaurant yet.")}</p>
     """
   end
 
@@ -181,7 +182,11 @@ defmodule FreguesiaWeb.Components do
     ~H"""
     <figure
       role="img"
-      aria-label={"Distribuição da economia relatada. Faixa da média: #{Savings.label(@highlight)}."}
+      aria-label={
+        gettext("Reported savings distribution. Average band: %{band}.",
+          band: Savings.label(@highlight)
+        )
+      }
     >
       <ul class="flex flex-col gap-2">
         <li
@@ -224,9 +229,9 @@ defmodule FreguesiaWeb.Components do
     <div>
       <p class="text-sm font-bold text-ink">
         <%= if @responses == 0 do %>
-          Ainda sem respostas nos últimos 30 dias
+          {gettext("No answers in the last 30 days yet")}
         <% else %>
-          Funcionou {@worked}/{@responses} em 30 dias
+          {gettext("Worked %{worked}/%{responses} in 30 days", worked: @worked, responses: @responses)}
         <% end %>
       </p>
       <div
@@ -302,14 +307,17 @@ defmodule FreguesiaWeb.Components do
   """
   def whatsapp_url(place_name, whatsapp_e164) do
     digits = String.trim_leading(whatsapp_e164, "+")
-    text = "Oi! Vi o #{place_name} na Freguesia e quero pedir direto."
+    text = gettext("Hi! I saw %{name} on Freguesia and want to order direct.", name: place_name)
     "https://wa.me/#{digits}?text=#{URI.encode(text, &URI.char_unreserved?/1)}"
   end
 
   defp funcionou_chip(place) do
     if is_list(place.stats) do
       stat = Stats.window(place, "30d")
-      if stat.responses >= 1, do: "Funcionou #{stat.worked}/#{stat.responses}"
+
+      if stat.responses >= 1,
+        do:
+          gettext("Worked %{worked}/%{responses}", worked: stat.worked, responses: stat.responses)
     end
   end
 
@@ -317,7 +325,7 @@ defmodule FreguesiaWeb.Components do
     if is_list(place.stats) do
       stat = Stats.window(place, "90d")
       n = stat.savings_hist |> Map.values() |> Enum.sum()
-      if n >= 10, do: "Economia média #{round_avg(stat.savings_avg)}%"
+      if n >= 10, do: gettext("Average savings %{percent}%", percent: round_avg(stat.savings_avg))
     end
   end
 
@@ -333,6 +341,8 @@ defmodule FreguesiaWeb.Components do
   defp category_colors(%{segment: %{color_key: key}}), do: ColorMap.for_key(key)
   defp category_colors(_place), do: ColorMap.neutral()
 
-  defp category_label(%{category: %{name: name}}) when is_binary(name), do: name
-  defp category_label(%{segment: %{name: name}}), do: name
+  defp category_label(%{category: %{key: key}}) when is_binary(key),
+    do: FreguesiaWeb.Labels.category_label(key)
+
+  defp category_label(%{segment: %{key: key}}), do: FreguesiaWeb.Labels.segment_label(key)
 end

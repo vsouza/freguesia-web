@@ -1,21 +1,27 @@
 <Layouts.admin flash={@flash}>
   <div class="mx-auto mt-10 flex max-w-sm flex-col gap-6 rounded-card bg-white p-8 shadow-card">
     <div>
-      <p class="text-xs font-bold uppercase tracking-wide text-muted">Backoffice</p>
-      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">Entrar</h1>
+      <p class="text-xs font-bold uppercase tracking-wide text-muted">{gettext("Backoffice")}</p>
+      <h1 class="mt-1 text-2xl font-extrabold tracking-tight">{gettext("Log in")}</h1>
     </div>
 
-    <.form for={@form} id="login-form" action={~p"/admin/entrar"} class="flex flex-col gap-1">
-      <.input field={@form[:email]} type="email" label="E-mail" autocomplete="username" required />
+    <.form for={@form} id="login-form" action={~p"/admin/sign-in"} class="flex flex-col gap-1">
+      <.input
+        field={@form[:email]}
+        type="email"
+        label={gettext("Email")}
+        autocomplete="username"
+        required
+      />
       <.input
         field={@form[:password]}
         type="password"
-        label="Senha"
+        label={gettext("Password")}
         autocomplete="current-password"
         required
       />
       <div class="mt-3">
-        <.button type="submit" id="login-submit" class="w-full">Continuar</.button>
+        <.button type="submit" id="login-submit" class="w-full">{gettext("Continue")}</.button>
       </div>
     </.form>
   </div>
