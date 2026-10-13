@@ -115,6 +115,13 @@ defmodule Freguesia.Backoffice do
     end)
   end
 
+  @doc "Replaces the photo of a place with an already stored key. Audited."
+  def replace_photo(%Place{} = place, operator, key) do
+    update_place(place, operator, "place.photo", %{photo_key: key}, fn updated ->
+      %{"photo_key" => updated.photo_key}
+    end)
+  end
+
   def place_stats(place_id), do: Stats.for_place(place_id)
 
   ## Complaints

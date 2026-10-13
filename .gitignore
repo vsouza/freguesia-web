@@ -35,3 +35,6 @@ freguesia-*.tar
 npm-debug.log
 /assets/node_modules/
 
+
+# Uploaded photos (local storage, see config :freguesia, :photo_dir)
+/priv/uploads/

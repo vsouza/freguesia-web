@@ -58,6 +58,9 @@ if config_env() == :prod do
   # Used in message links (e.g. the place page after approval).
   config :freguesia, :public_url, "https://#{host}"
 
+  # Local photo storage. Point PHOTO_DIR to a mounted volume in production.
+  config :freguesia, :photo_dir, System.get_env("PHOTO_DIR") || "/app/data/photos"
+
   # Phase 0 (G1): staging uses the fake adapter. The real WhatsApp API
   # (Freguesia.Messaging.Cloud) belongs to phase 1 and must be wired here before production.
 

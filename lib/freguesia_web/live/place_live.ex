@@ -171,15 +171,23 @@ defmodule FreguesiaWeb.PlaceLive do
         <.icon name="hero-arrow-left-mini" class="size-4" /> {@place.neighborhood.name}
       </.link>
 
-      <div
-        class={["flex aspect-[16/9] items-end rounded-card p-5", @colors.tint]}
-        role="img"
-        aria-label={gettext("Photo of %{name} not uploaded yet", name: @place.name)}
-      >
-        <span class={["text-sm font-bold uppercase tracking-wide", @colors.accent]}>
-          {(@place.category && @place.category.name) || @place.segment.name}
-        </span>
-      </div>
+      <%= if @place.photo_key do %>
+        <img
+          src={~p"/photos/#{@place.photo_key}"}
+          alt={gettext("Photo of %{name}", name: @place.name)}
+          class="aspect-[16/9] w-full rounded-card object-cover"
+        />
+      <% else %>
+        <div
+          class={["flex aspect-[16/9] items-end rounded-card p-5", @colors.tint]}
+          role="img"
+          aria-label={gettext("Photo of %{name} not uploaded yet", name: @place.name)}
+        >
+          <span class={["text-sm font-bold uppercase tracking-wide", @colors.accent]}>
+            {(@place.category && @place.category.name) || @place.segment.name}
+          </span>
+        </div>
+      <% end %>
 
       <section class="mt-6 flex flex-col gap-4">
         <div class="flex flex-wrap items-center gap-2">
