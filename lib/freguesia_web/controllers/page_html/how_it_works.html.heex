@@ -1,0 +1,57 @@
+<Layouts.app flash={@flash} current_neighborhood={@current_neighborhood}>
+  <FreguesiaWeb.Components.two_line_title first={gettext("How")} second={gettext("it works")} />
+
+  <ol id="how-steps" class="mt-6 flex flex-col gap-4">
+    <li class="flex gap-4 rounded-card bg-sand p-5">
+      <span class="flex size-9 flex-none items-center justify-center rounded-full bg-ink text-sm font-extrabold text-white">
+        1
+      </span>
+      <div>
+        <h2 class="font-extrabold text-ink">{gettext("Pick your neighborhood")}</h2>
+        <p class="mt-1 text-sm text-ink-2">
+          {gettext(
+            "You see the places that deliver to where you are, within their delivery area."
+          )}
+        </p>
+      </div>
+    </li>
+    <li class="flex gap-4 rounded-card bg-sand p-5">
+      <span class="flex size-9 flex-none items-center justify-center rounded-full bg-ink text-sm font-extrabold text-white">
+        2
+      </span>
+      <div>
+        <h2 class="font-extrabold text-ink">{gettext("Order on WhatsApp")}</h2>
+        <p class="mt-1 text-sm text-ink-2">
+          {gettext(
+            "Each place has a verified number. You order directly, with no commission on the order."
+          )}
+        </p>
+      </div>
+    </li>
+    <li class="flex gap-4 rounded-card bg-sand p-5">
+      <span class="flex size-9 flex-none items-center justify-center rounded-full bg-ink text-sm font-extrabold text-white">
+        3
+      </span>
+      <div>
+        <h2 class="font-extrabold text-ink">{gettext("Tell us what you paid")}</h2>
+        <p class="mt-1 text-sm text-ink-2">
+          {gettext(
+            "After ordering, a short question says whether it worked and how much you saved. The averages come from these answers."
+          )}
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <p class="mt-6 text-sm text-ink-2">
+    {gettext(
+      "Freguesia is a catalog. We don't take orders, charge or deliver. Price, payment and delivery are arranged with the place."
+    )}
+  </p>
+  <.link
+    navigate={~p"/how-we-calculate"}
+    class="mt-4 inline-flex text-sm font-bold text-ink underline underline-offset-4"
+  >
+    {gettext("How we calculate")}
+  </.link>
+</Layouts.app>

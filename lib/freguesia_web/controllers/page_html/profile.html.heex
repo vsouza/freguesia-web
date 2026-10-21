@@ -1,0 +1,25 @@
+<Layouts.app flash={@flash} active_tab={:profile} current_neighborhood={@current_neighborhood}>
+  <FreguesiaWeb.Components.two_line_title first={gettext("My")} second={gettext("profile")} />
+
+  <section id="profile-guest" class="mt-6 rounded-card bg-sand p-5">
+    <h2 class="font-extrabold text-ink">{gettext("You don't need an account")}</h2>
+    <p class="mt-2 text-sm text-ink-2">
+      {gettext(
+        "Browse, save favorites on this device and order on WhatsApp. Customer accounts are not open yet."
+      )}
+    </p>
+  </section>
+
+  <section class="mt-6 rounded-card bg-ink p-5 text-white">
+    <h2 class="font-extrabold">{gettext("Own a place?")}</h2>
+    <p class="mt-2 text-sm text-white/80">
+      {gettext("Sign in to manage your place, its delivery area and its perks.")}
+    </p>
+    <.link
+      navigate={~p"/business/sign-in"}
+      class="mt-4 inline-flex min-h-11 items-center rounded-full bg-white px-5 font-bold text-ink"
+    >
+      {gettext("For businesses")}
+    </.link>
+  </section>
+</Layouts.app>

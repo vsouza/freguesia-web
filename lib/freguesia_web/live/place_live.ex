@@ -9,7 +9,7 @@ defmodule FreguesiaWeb.PlaceLive do
   """
   use FreguesiaWeb, :live_view
 
-  alias Freguesia.{Catalog, Events, Reports}
+  alias Freguesia.{Catalog, Events, Reports, Sponsorships}
   alias Freguesia.Catalog.ColorMap
   alias Freguesia.Reports.{Savings, Stats}
   alias FreguesiaWeb.Components
@@ -47,6 +47,7 @@ defmodule FreguesiaWeb.PlaceLive do
              (place.category && place.category.color_key) || place.segment.color_key
            ),
          stats: Stats.for_place(place.id),
+         own_ad: Sponsorships.own_detail_for(place.id),
          hidden?: Reports.whatsapp_hidden?(place.id),
          sheet: nil,
          report_open?: false
@@ -220,6 +221,18 @@ defmodule FreguesiaWeb.PlaceLive do
           </p>
         </div>
 
+        <section
+          :if={@own_ad}
+          id="own-ad"
+          class="rounded-card border border-line bg-sand p-5 text-sm text-ink-2"
+        >
+          <p class="text-xs font-bold uppercase tracking-wide text-muted">
+            {gettext("Ad · paid by the place")}
+          </p>
+          <p class="mt-2 font-extrabold text-ink">{@own_ad.promotion.title}</p>
+          <p :if={@own_ad.promotion.body} class="mt-1">{@own_ad.promotion.body}</p>
+        </section>
+
         <div id="about-direct" class="rounded-card border border-line p-5 text-sm text-ink-2">
           <p class="font-bold text-ink">{gettext("About ordering direct")}</p>
           <p class="mt-1">
@@ -282,38 +295,52 @@ defmodule FreguesiaWeb.PlaceLive do
       <div class="h-24" aria-hidden="true" />
 
       <div class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pb-24 pt-4 backdrop-blur">
-        <div class="mx-auto flex max-w-md flex-col gap-2 md:max-w-3xl">
-          <%= cond do %>
-            <% @hidden? -> %>
-              <span
-                id="whatsapp-cta"
-                aria-disabled="true"
-                class="inline-flex min-h-12 items-center justify-center rounded-full border border-line px-6 text-base font-bold text-muted"
-              >
-                {gettext("Number under review")}
-              </span>
-            <% @place.status == :verified and @place.hours_status != {:paused} -> %>
-              <%!-- New tab: the page stays open and the sheet appears when the tab regains focus. --%>
-              <a
-                href={~p"/places/#{@place.slug}/whatsapp"}
-                target="_blank"
-                rel="noopener"
-                id="whatsapp-cta"
-                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 text-base font-bold text-white transition duration-150 hover:bg-ink-2 active:scale-[0.98]"
-              >
-                <.icon name="hero-chat-bubble-left-ellipsis" class="size-5" /> {gettext(
-                  "Order on WhatsApp"
-                )}
-              </a>
-            <% true -> %>
-              <span
-                id="whatsapp-cta"
-                aria-disabled="true"
-                class="inline-flex min-h-12 items-center justify-center rounded-full border border-line px-6 text-base font-bold text-muted"
-              >
-                {gettext("Not taking orders today")}
-              </span>
-          <% end %>
+        <div class="mx-auto flex max-w-md items-center gap-3 md:max-w-3xl">
+          <div class="min-w-0 flex-1">
+            <%= cond do %>
+              <% @hidden? -> %>
+                <span
+                  id="whatsapp-cta"
+                  aria-disabled="true"
+                  class="inline-flex min-h-12 items-center justify-center rounded-full border border-line px-6 text-base font-bold text-muted"
+                >
+                  {gettext("Number under review")}
+                </span>
+              <% @place.status == :verified and @place.hours_status != {:paused} -> %>
+                <%!-- New tab: the page stays open and the sheet appears when the tab regains focus. --%>
+                <a
+                  href={~p"/places/#{@place.slug}/whatsapp"}
+                  target="_blank"
+                  rel="noopener"
+                  id="whatsapp-cta"
+                  class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 text-base font-bold text-white transition duration-150 hover:bg-ink-2 active:scale-[0.98]"
+                >
+                  <.icon name="hero-chat-bubble-left-ellipsis" class="size-5" /> {gettext(
+                    "Order on WhatsApp"
+                  )}
+                </a>
+              <% true -> %>
+                <span
+                  id="whatsapp-cta"
+                  aria-disabled="true"
+                  class="inline-flex min-h-12 items-center justify-center rounded-full border border-line px-6 text-base font-bold text-muted"
+                >
+                  {gettext("Not taking orders today")}
+                </span>
+            <% end %>
+          </div>
+          <button
+            type="button"
+            id="favorite-toggle"
+            phx-hook=".Favorite"
+            phx-update="ignore"
+            data-slug={@place.slug}
+            aria-pressed="false"
+            aria-label={gettext("Save to favorites")}
+            class="flex size-12 flex-none items-center justify-center rounded-full border border-line bg-white transition duration-150 hover:bg-sand active:scale-95 aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white"
+          >
+            <.icon name="hero-heart" class="size-5" />
+          </button>
         </div>
       </div>
 
@@ -397,6 +424,36 @@ defmodule FreguesiaWeb.PlaceLive do
         </div>
       </.bottom_sheet>
     </Layouts.app>
+
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".Favorite">
+      // Favorites live on this device (PRD §5). Key shared with the Favorites tab.
+      const KEY = "freguesia:favorites"
+
+      function readFavorites() {
+        try {
+          const slugs = JSON.parse(window.localStorage.getItem(KEY) || "[]")
+          return Array.isArray(slugs) ? slugs : []
+        } catch (_) {
+          return []
+        }
+      }
+
+      export default {
+        mounted() {
+          const slug = this.el.dataset.slug
+          const paint = () => {
+            this.el.setAttribute("aria-pressed", String(readFavorites().includes(slug)))
+          }
+          paint()
+          this.el.addEventListener("click", () => {
+            const slugs = readFavorites()
+            const next = slugs.includes(slug) ? slugs.filter(s => s !== slug) : [...slugs, slug]
+            window.localStorage.setItem(KEY, JSON.stringify(next))
+            paint()
+          })
+        }
+      }
+    </script>
 
     <script :type={Phoenix.LiveView.ColocatedHook} name=".ReturnPrompt">
       export default {

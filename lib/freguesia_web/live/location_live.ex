@@ -3,8 +3,9 @@ defmodule FreguesiaWeb.LocationLive do
   Location step (PRD §5): browser geolocation or a manual neighborhood choice.
 
   The browser sends the point to this process once. It is resolved to a pilot
-  neighborhood with PostGIS and discarded. Only the neighborhood slug is kept,
-  in the session (PRD §13).
+  neighborhood with PostGIS. The point and the neighborhood then go to the
+  session through a POST (`LocationController.geo/2`), never through the URL.
+  Coordinates are not stored in the database (PRD §5 and §13).
   """
   use FreguesiaWeb, :live_view
 
@@ -14,7 +15,12 @@ defmodule FreguesiaWeb.LocationLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(page_title: gettext("Location"), neighborhoods: Catalog.list_pilot_neighborhoods())}
+     |> assign(
+       page_title: gettext("Location"),
+       neighborhoods: Catalog.list_pilot_neighborhoods(),
+       geo: to_form(%{"neighborhood" => "", "lat" => "", "lng" => ""}, as: :geo),
+       submit_geo: false
+     )}
   end
 
   @impl true
@@ -29,7 +35,13 @@ defmodule FreguesiaWeb.LocationLive do
          )}
 
       neighborhood ->
-        {:noreply, redirect(socket, to: ~p"/location/#{neighborhood.slug}?via=geo")}
+        geo =
+          to_form(
+            %{"neighborhood" => neighborhood.slug, "lat" => lat, "lng" => lng},
+            as: :geo
+          )
+
+        {:noreply, assign(socket, geo: geo, submit_geo: true)}
     end
   end
 
@@ -71,13 +83,28 @@ defmodule FreguesiaWeb.LocationLive do
       <ul class="mt-3 grid grid-cols-2 gap-2">
         <li :for={neighborhood <- @neighborhoods}>
           <.link
-            href={~p"/location/#{neighborhood.slug}?via=manual"}
+            href={~p"/location/#{neighborhood.slug}"}
             class="flex min-h-11 items-center rounded-full border border-line px-4 font-semibold text-ink hover:bg-sand"
           >
             {neighborhood.name}
           </.link>
         </li>
       </ul>
+
+      <.form
+        for={@geo}
+        id="geo-form"
+        action={~p"/location/geo"}
+        phx-trigger-action={@submit_geo}
+        class="hidden"
+      >
+        <input
+          :for={field <- [:neighborhood, :lat, :lng]}
+          type="hidden"
+          name={@geo[field].name}
+          value={@geo[field].value}
+        />
+      </.form>
 
       <.link
         navigate={~p"/areas/savassi"}

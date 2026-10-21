@@ -30,24 +30,34 @@ defmodule Freguesia.CatalogTest do
 
       names =
         savassi
-        |> Catalog.list_home_places(@monday_noon)
+        |> Catalog.list_home_places(nil, @monday_noon)
         |> Enum.map(& &1.name)
 
       assert names == ["Bistrô A", "Bistrô B", "Cantina Fechada"]
       assert open_a && open_b && closed
     end
 
-    test "a place that serves the neighborhood by coverage appears even when located elsewhere" do
+    test "a point outside the neighborhood is covered when it is inside the radius" do
       savassi = Fixtures.neighborhood()
-      lourdes = Fixtures.neighborhood(%{slug: "lourdes", name: "Lourdes"})
-      place = Fixtures.verified_place(%{name: "Atende Lourdes", neighborhood: lourdes})
+      Fixtures.verified_place(%{name: "Raio Largo", neighborhood: savassi})
 
-      Repo.insert_all(Freguesia.Catalog.PlaceCoverage, [
-        %{place_id: place.id, neighborhood_id: savassi.id, inserted_at: now(), updated_at: now()}
-      ])
+      # About 1 km east of the Savassi centroid, outside its polygon, inside 3 km.
+      just_outside = {-19.9372, -43.9278}
 
-      assert ["Atende Lourdes"] ==
-               savassi |> Catalog.list_home_places(@monday_noon) |> Enum.map(& &1.name)
+      assert ["Raio Largo"] ==
+               savassi
+               |> Catalog.list_home_places(just_outside, @monday_noon)
+               |> Enum.map(& &1.name)
+    end
+
+    test "a point beyond the radius does not see the place" do
+      savassi = Fixtures.neighborhood()
+      Fixtures.verified_place(%{name: "Longe Demais", neighborhood: savassi})
+
+      # About 3.2 km east of the centroid, past the 3 km default radius.
+      beyond = {-19.9372, -43.9078}
+
+      assert [] == savassi |> Catalog.list_home_places(beyond, @monday_noon)
     end
   end
 

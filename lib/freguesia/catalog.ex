@@ -5,8 +5,8 @@ defmodule Freguesia.Catalog do
   """
   import Ecto.Query, warn: false
 
-  alias Freguesia.Catalog.{Neighborhood, Offer, OpeningHours, Place, PlaceCoverage, Segment, Text}
-  alias Freguesia.Repo
+  alias Freguesia.Catalog.{Neighborhood, Offer, OpeningHours, Place, Promotion, Segment, Text}
+  alias Freguesia.{DeliveryAreas, Repo}
   alias Freguesia.Reports.{PlaceStat, Stats}
 
   @doc "Pilot neighborhoods, in alphabetical order."
@@ -30,23 +30,66 @@ defmodule Freguesia.Catalog do
   def get_segment_by_key(key), do: Repo.get_by(Segment, key: key)
 
   @doc """
-  Verified places that serve the neighborhood, in home order (PRD §8):
-  open ones before closed ones, then by name. Ads and promotions are not included here.
+  Verified places that deliver to a point, in home order (PRD §8): open ones before
+  closed ones, then by name. Ads and promotions are not included here.
 
-  Each place comes with `hours_status` filled in and its approved offer (if any).
+  `point` is `{lat, lng}` (the user's point, rounded). Without one, the centroid of
+  the neighborhood is used. Each place comes with `hours_status` filled in and its
+  approved offer (if any).
   """
-  def list_home_places(neighborhood, now \\ DateTime.utc_now(), filters \\ %{}) do
-    neighborhood_id = neighborhood.id
+  def list_home_places(neighborhood, point \\ nil, now \\ DateTime.utc_now(), filters \\ %{}) do
+    case home_point(neighborhood, point) do
+      nil ->
+        []
 
-    coverage =
-      from c in PlaceCoverage, where: c.neighborhood_id == ^neighborhood_id, select: c.place_id
+      {lat, lng} ->
+        verified_places_query()
+        |> where([p], p.id in subquery(DeliveryAreas.covering_place_ids_query(lat, lng)))
+        |> Repo.all()
+        |> Enum.map(&with_hours_status(&1, now))
+        |> Enum.filter(&matches_filters?(&1, filters))
+        |> sort_places()
+    end
+  end
 
-    verified_places_query()
-    |> where([p], p.neighborhood_id == ^neighborhood_id or p.id in subquery(coverage))
-    |> Repo.all()
-    |> Enum.map(&with_hours_status(&1, now))
-    |> Enum.filter(&matches_filters?(&1, filters))
-    |> sort_places()
+  @doc "The point the home is computed from: the given `{lat, lng}`, or the neighborhood centroid."
+  def home_point(_neighborhood, {lat, lng}) when is_number(lat) and is_number(lng),
+    do: {lat, lng}
+
+  def home_point(neighborhood, _point), do: neighborhood_centroid(neighborhood.id)
+
+  @doc "Centroid `{lat, lng}` of a neighborhood polygon, or `nil` when it has no geometry."
+  def neighborhood_centroid(neighborhood_id) do
+    dumped = Ecto.UUID.dump!(neighborhood_id)
+
+    case Repo.one(
+           from n in "neighborhoods",
+             where: n.id == ^dumped,
+             select:
+               {fragment("ST_Y(ST_Centroid(?))", n.geom),
+                fragment("ST_X(ST_Centroid(?))", n.geom)}
+         ) do
+      {lat, lng} when is_number(lat) and is_number(lng) -> {lat, lng}
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Approved promotions running at `now`, from verified places, newest first (PRD §6).
+  Each promotion comes with its place preloaded, for the link to the details page.
+  """
+  def list_active_promotions(now \\ DateTime.utc_now()) do
+    now = DateTime.truncate(now, :second)
+
+    Repo.all(
+      from pr in Promotion,
+        join: p in assoc(pr, :place),
+        where: pr.status == :approved and p.status == :verified,
+        where: is_nil(pr.starts_at) or pr.starts_at <= ^now,
+        where: is_nil(pr.ends_at) or pr.ends_at >= ^now,
+        order_by: [desc: pr.starts_at],
+        preload: [place: p]
+    )
   end
 
   @doc """
@@ -111,8 +154,7 @@ defmodule Freguesia.Catalog do
 
   defp flags_match?(place, filters) do
     (!filters[:open] or match?({:open, _}, place.hours_status)) and
-      (!filters[:perk] or active_offer(place) != nil) and
-      (!filters[:verified] or place.status == :verified)
+      (!filters[:perk] or active_offer(place) != nil)
   end
 
   defp query_match?(place, query) do

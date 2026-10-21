@@ -21,7 +21,7 @@ defmodule FreguesiaWeb.G1Test do
     whatsapp = Fixtures.unique_whatsapp()
     e164 = "+55" <> String.replace(whatsapp, ~r/\D/, "")
 
-    {:ok, signup, _} = live(conn, ~p"/business/register")
+    {:ok, signup, _} = live(Fixtures.sign_in_business(conn), ~p"/business/register")
 
     signup
     |> element("#signup-form")

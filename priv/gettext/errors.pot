@@ -113,7 +113,7 @@ msgstr ""
 msgid "accept the terms to continue"
 msgstr ""
 
-#: lib/freguesia/verification.ex:319
+#: lib/freguesia/verification.ex:322
 #, elixir-autogen, elixir-format
 msgid "choose the type of food"
 msgstr ""
@@ -123,12 +123,12 @@ msgstr ""
 msgid "invalid email"
 msgstr ""
 
-#: lib/freguesia/verification.ex:309
+#: lib/freguesia/verification.ex:312
 #, elixir-autogen, elixir-format
 msgid "invalid type"
 msgstr ""
 
-#: lib/freguesia/verification.ex:323
+#: lib/freguesia/verification.ex:326
 #, elixir-autogen, elixir-format
 msgid "invalid type of food"
 msgstr ""
@@ -138,22 +138,22 @@ msgstr ""
 msgid "is required"
 msgstr ""
 
-#: lib/freguesia/verification.ex:358
+#: lib/freguesia/verification.ex:361
 #, elixir-autogen, elixir-format
 msgid "neighborhood outside the pilot"
 msgstr ""
 
-#: lib/freguesia/verification.ex:345
+#: lib/freguesia/verification.ex:348
 #, elixir-autogen, elixir-format
 msgid "outside the pilot for now"
 msgstr ""
 
-#: lib/freguesia/verification.ex:410
+#: lib/freguesia/verification.ex:431
 #, elixir-autogen, elixir-format
 msgid "this number can only try again from %{date}"
 msgstr ""
 
-#: lib/freguesia/verification.ex:395
+#: lib/freguesia/verification.ex:416
 #, elixir-autogen, elixir-format
 msgid "this number is already in the catalog"
 msgstr ""
@@ -169,7 +169,7 @@ msgid "up to 80 characters"
 msgstr ""
 
 #: lib/freguesia/catalog/place.ex:58
-#: lib/freguesia/verification.ex:373
+#: lib/freguesia/verification.ex:376
 #: lib/freguesia/verification/signup.ex:64
 #, elixir-autogen, elixir-format
 msgid "use a Brazilian WhatsApp number with area code"
@@ -183,4 +183,9 @@ msgstr ""
 #: lib/freguesia/verification/signup.ex:51
 #, elixir-autogen, elixir-format
 msgid "use between 3 and 60 characters"
+msgstr ""
+
+#: lib/freguesia/verification.ex:403
+#, elixir-autogen, elixir-format
+msgid "this number is already registered by another account"
 msgstr ""

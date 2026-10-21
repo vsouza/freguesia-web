@@ -25,11 +25,19 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/freguesia"
 import topbar from "../vendor/topbar"
 
+// Business sign-in loads the Firebase SDK only when its page mounts the hook. Keeps the
+// initial JavaScript of every other page small (PRD §12a: 90 kB gzip budget).
+const FirebaseSignIn = {
+  mounted() {
+    import("./firebase_sign_in").then(({FirebaseSignIn: hook}) => hook.mounted.call(this))
+  },
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, FirebaseSignIn},
 })
 
 // Show progress bar on live navigation and form submits

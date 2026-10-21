@@ -9,12 +9,12 @@
 # - 1 dev admin operator (2FA is set up on the first login)
 # - Ad slots, disabled
 
-import Ecto.Query
-
 alias Freguesia.Repo
 alias Freguesia.Admin
 alias Freguesia.Admin.Operator
 alias Freguesia.Catalog.{Category, City, Neighborhood, Offer, Place, PlaceCoverage, Segment}
+alias Freguesia.DeliveryAreas
+import Ecto.Query, only: [from: 2]
 alias Freguesia.Verification.Request
 
 now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -142,16 +142,9 @@ for {name, slug, cat_key, hood_slug, whatsapp, offer, coverage_slugs} <- fiction
         terms_accepted_at: now
       })
 
-    for coverage_slug <- Enum.uniq(coverage_slugs) do
-      Repo.insert_all(PlaceCoverage, [
-        %{
-          place_id: place.id,
-          neighborhood_id: neighborhood.(coverage_slug).id,
-          inserted_at: now,
-          updated_at: now
-        }
-      ])
-    end
+    # Same path as approval: default radius around the neighborhood centroid (PRD §6).
+    served_ids = Enum.map(Enum.uniq(coverage_slugs), &neighborhood.(&1).id)
+    :ok = DeliveryAreas.ensure_for_place(place.id, served_ids)
 
     case offer do
       {text, tag} ->
@@ -189,16 +182,17 @@ unless Repo.get_by(Place, slug: pending_slug) do
       terms_accepted_at: now
     })
 
-  Repo.insert_all(PlaceCoverage, [
-    %{
-      place_id: pending.id,
-      neighborhood_id: neighborhood.("lourdes").id,
-      inserted_at: now,
-      updated_at: now
-    }
-  ])
-
   Repo.insert!(%Request{place_id: pending.id, status: :pending, checks: %{}})
+end
+
+# --- Delivery areas for places seeded before the radius rule (idempotent) -------
+
+for place <- Repo.all(from p in Place, where: p.status == :verified),
+    is_nil(DeliveryAreas.get_for_place(place.id)) do
+  served =
+    Repo.all(from c in PlaceCoverage, where: c.place_id == ^place.id, select: c.neighborhood_id)
+
+  :ok = DeliveryAreas.ensure_for_place(place.id, served)
 end
 
 # --- Dev operator ------------------------------------------------------

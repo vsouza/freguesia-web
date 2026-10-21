@@ -19,6 +19,16 @@ defmodule FreguesiaWeb.Labels do
   def segment_label("pet"), do: gettext("Pet")
   def segment_label(_key), do: gettext("All")
 
+  @neighborhood_names %{
+    "savassi" => "Savassi",
+    "lourdes" => "Lourdes",
+    "funcionarios" => "Funcionários",
+    "santa-tereza" => "Santa Tereza",
+    "sion" => "Sion"
+  }
+
+  def neighborhood_name(slug), do: Map.get(@neighborhood_names, slug, slug)
+
   def category_label("pizza"), do: gettext("Pizza")
   def category_label("mineira"), do: gettext("Mineira")
   def category_label("burger"), do: gettext("Burger")
