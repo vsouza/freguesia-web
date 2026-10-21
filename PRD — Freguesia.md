@@ -92,7 +92,7 @@ Screens follow the design canvas (Freguesia in Claude Design). Routes are Phoeni
 | Favorites | `/favorites` | List of saved places | Without account: local; with account: synced |
 | Search | `/search` | Name search with recent history | Same normalization as the home (unaccent, lower, `&` → `e`) |
 | Profile | `/profile` | Sign in, default neighborhood, my reports, sign out, delete account | Deleting anonymizes reports and removes favorites |
-| Desktop | same routes | 3-column grid, search in the header, same card component | Breakpoint at 768 px |
+| Desktop | same routes | Full-size layouts per screen in section 12a: header navigation, 3-column grid, same card component | Breakpoints at 768 and 1024 px |
 
 **Bottom navigation (mobile):** Home, Search, Promotions, Favorites, Profile. Active item in a black circle; Promotions gets a dot when there is a new item since the last visit.
 
@@ -360,6 +360,59 @@ The map lives in `Catalog.ColorMap` (keyed by the `color_key` of segments and ca
 **PWA and performance.** `manifest.json` with icon and `ink` theme color; service worker caching static assets and photos (stale-while-revalidate) plus an offline page; budget: initial JS up to 90 kB gzip, LCP < 2.5 s on 4G, WebP images with `srcset`. Mobile-first with a 768 px breakpoint for the 3-column grid.
 
 **Accessibility.** AA contrast on all text, 44 px touch targets, visible input labels, `aria-pressed` on chips and filters, `aria-current` on navigation, `role="img"` with a description on the mini histogram, color never the only signal.
+
+## 12a. Mobile web and full-size desktop
+
+Freguesia ships two experiences from one codebase and one set of LiveViews: the mobile web app (phones, the primary surface) and the full-size site (laptops and desktops). There is no separate `m.` domain and no user-agent sniffing: the same HTML is served, CSS breakpoints pick the layout, and a few components render both variants with only one visible. Mobile is designed first; the full-size layout is a deliberate design, not a stretched phone screen.
+
+**Breakpoints and containers**
+
+| Range | Name | Container | Grid | Navigation |
+| --- | --- | --- | --- | --- |
+| ≤ 767 px | mobile | full width, 20 px gutters, max 430 px centered on wider phones | 1 column | Bottom bar (Home, Search, Promotions, Favorites, Profile) |
+| 768–1023 px | tablet | 720 px, 24 px gutters | 2 columns | Top header with links; bottom bar hidden |
+| 1024–1439 px | desktop | 1200 px, 24 px gutters | 3 columns | Top header: logo, search field, links, location pill |
+| ≥ 1440 px | wide | 1280 px, centered | 3 columns (cards up to 400 px) | Same as desktop |
+
+**Layout per screen**
+
+| Screen | Mobile web | Full-size |
+| --- | --- | --- |
+| Welcome, Location, Sign in | Full-bleed photo with a glass panel at the bottom | Split: photo fills the left half, the panel sits centered on the right (max 480 px); on tablet the photo becomes a top band |
+| Home | Gradient top, pill search + filter button, chip rows, card list, ad after the 2nd card, bottom bar | Header with search inline and the category gradient as a band; chips on one row; 3-column card grid; the ad occupies grid slot 3 as an in-feed card; "For businesses" band and footer in two columns |
+| Place card | Full width, photo 116 px on the right | Same component; in the grid the card is a fixed-height tile with the photo at 132 px |
+| Place details | Photo circle on the gradient, sheet below, fixed bottom button, return prompt as a bottom sheet | Two columns: left column with photo, proof tiles, perk, ad slot and "About"; right column a sticky panel (name, status, category, delivery, "Order on WhatsApp", favorite); the return prompt becomes a centered modal |
+| Search | Own screen with history | Inline in the header; results replace the home grid; `/` focuses the field |
+| Promotions, Favorites, Profile | Own screens from the bottom bar | Pages under the header; Favorites and Promotions use the same 3-column grid |
+| Business sign in and registration | Stacked form, fixed bottom button | Centered card (max 560 px) with the steps as a left rail; the sticky button stays inside the card |
+| Delivery area | Map 350×380, slider and list below | Map takes 60% of the width and the full viewport height; slider, summary and neighborhood list in a right column; mouse wheel zooms, click toggles a polygon |
+| Business panel (phase 3) | Stacked cards, bottom bar with Places, Reports, Promotions, Account | Left sidebar, content area, same pattern as the backoffice |
+| Backoffice | Supported from 768 px as a stacked list with the review panel as a drawer; approvals work but are secondary | Primary surface at ≥ 1024 px: sidebar, queue, review panel side by side |
+
+**Interaction differences on full-size**
+
+- Hover states on cards (lift 2 px, stronger shadow), chips and buttons; focus rings visible on keyboard navigation.
+- Keyboard: `/` focuses search, `Esc` closes modals and the return prompt, arrow keys move through the grid.
+- Proof chips show a tooltip with the attribution text ("Reported by 52 regulars…") instead of relying on the details page.
+- Modals replace bottom sheets; toasts replace inline confirmations where space allows.
+- The location pill opens a popover with the manual neighborhood list; geolocation works the same way.
+
+**Assets and performance**
+
+- Photos served with `srcset` at 240, 480 and 800 px widths and `sizes` per breakpoint; the details photo grows from 250 to 320 px on desktop.
+- Same JS budget on all sizes (90 kB gzip initial); the map library loads only on the delivery-area screen.
+- Core Web Vitals targets apply to both: LCP < 2.5 s on 4G mobile and < 1.5 s on desktop broadband; CLS < 0.1 (card tiles have fixed aspect ratios).
+
+**SEO and sharing**
+
+- One canonical URL per place (`/places/:slug`) for every screen size; Open Graph and JSON-LD `LocalBusiness` rendered server-side.
+- Public pages (home, place details, promotions) are crawlable without JavaScript; the LiveView socket only enhances them.
+
+**Testing**
+
+- Wallaby suites run at 390×844 and 1280×800; critical flows must pass on both.
+- Visual snapshots of home, details, delivery area and backoffice at 390, 768 and 1280 px on every PR (Percy or a self-hosted equivalent).
+- The design canvas holds "Home desktop · 1280" today; desktop boards for details, business registration and delivery area are an open design task before phase 1 ends.
 
 ## 13. Security, privacy and LGPD
 

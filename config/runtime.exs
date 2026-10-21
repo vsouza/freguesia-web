@@ -1,5 +1,22 @@
 import Config
 
+# Firebase web config for the business sign-in page (PRD §6). These values are public
+# (they identify the project, they are not secrets). Missing values keep Google and
+# Apple sign-in disabled, so every environment still works without a Firebase project.
+firebase_web =
+  [
+    apiKey: System.get_env("FIREBASE_API_KEY"),
+    authDomain: System.get_env("FIREBASE_AUTH_DOMAIN"),
+    projectId: System.get_env("FIREBASE_PROJECT_ID"),
+    appId: System.get_env("FIREBASE_APP_ID")
+  ]
+
+config :freguesia,
+       :firebase_web,
+       if(Enum.all?(firebase_web, fn {_key, value} -> is_binary(value) and value != "" end),
+         do: Map.new(firebase_web)
+       )
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration
@@ -60,6 +77,10 @@ if config_env() == :prod do
 
   # Local photo storage. Point PHOTO_DIR to a mounted volume in production.
   config :freguesia, :photo_dir, System.get_env("PHOTO_DIR") || "/app/data/photos"
+
+  # Business sign-in: Firebase ID tokens, verified with the Identity Toolkit API key.
+  config :freguesia, :business_identity, Freguesia.Business.Identity.Firebase
+  config :freguesia, :firebase_api_key, System.get_env("FIREBASE_API_KEY")
 
   # Phase 0 (G1): staging uses the fake adapter. The real WhatsApp API
   # (Freguesia.Messaging.Cloud) belongs to phase 1 and must be wired here before production.

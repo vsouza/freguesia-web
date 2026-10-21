@@ -13,6 +13,10 @@ config :freguesia,
   # WhatsApp Cloud API adapter. Dev and test use the Fake (see Freguesia.Messaging).
   messaging: Freguesia.Messaging.Fake
 
+# Business sign-in (PRD §6). Dev and test accept `fake:<email>` tokens; production
+# verifies Firebase ID tokens (see config/runtime.exs).
+config :freguesia, :business_identity, Freguesia.Business.Identity.Fake
+
 # Public address, used in message links (e.g. the place page)
 config :freguesia, :public_url, "http://localhost:4000"
 
@@ -63,7 +67,7 @@ config :esbuild,
   version: "0.25.4",
   freguesia: [
     args:
-      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
+      ~w(js/app.js --bundle --splitting --format=esm --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
   ]
