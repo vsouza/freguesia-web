@@ -1,23 +1,17 @@
 defmodule Freguesia.RateLimitTest do
-  # async: false on purpose. The rate limit is off in test and this module turns it on
-  # globally; in an async module it would leak into other tests sharing 127.0.0.1.
+  # async: false on purpose: see Freguesia.RateLimitHelpers.
   use Freguesia.DataCase, async: false
 
   import Ecto.Query, only: [from: 2]
+  import Freguesia.RateLimitHelpers
 
   alias Freguesia.Catalog.Place
   alias Freguesia.{Fixtures, RateLimit, Repo, Verification}
   alias Freguesia.Verification.Code
 
-  setup do
-    previous = Application.get_env(:freguesia, RateLimit)
-    Application.put_env(:freguesia, RateLimit, enabled: true)
-    :ets.delete_all_objects(RateLimit)
-    on_exit(fn -> Application.put_env(:freguesia, RateLimit, previous) end)
-    :ok
-  end
+  setup :enable_rate_limit
 
-  defp keys, do: [device: Ecto.UUID.generate(), ip24: Ecto.UUID.generate()]
+  defp keys, do: [device: Ecto.UUID.generate(), ip: Ecto.UUID.generate()]
 
   describe "check/2" do
     test "allows up to the limit, then denies" do
@@ -28,15 +22,33 @@ defmodule Freguesia.RateLimitTest do
     end
 
     test "denies when any one key is over the limit" do
-      ip24 = Ecto.UUID.generate()
+      ip = Ecto.UUID.generate()
 
       for _ <- 1..3 do
-        assert :ok = RateLimit.check(:verification_code, device: Ecto.UUID.generate(), ip24: ip24)
+        assert :ok = RateLimit.check(:verification_code, device: Ecto.UUID.generate(), ip: ip)
       end
 
       # A fresh device on the same IP is still denied.
       assert {:error, :rate_limited} =
-               RateLimit.check(:verification_code, device: Ecto.UUID.generate(), ip24: ip24)
+               RateLimit.check(:verification_code, device: Ecto.UUID.generate(), ip: ip)
+    end
+
+    test "a denied request counts on no key" do
+      device = Ecto.UUID.generate()
+      busy_ip = Ecto.UUID.generate()
+
+      for _ <- 1..3, do: RateLimit.check(:verification_code, ip: busy_ip)
+
+      for _ <- 1..5 do
+        assert {:error, :rate_limited} =
+                 RateLimit.check(:verification_code, device: device, ip: busy_ip)
+      end
+
+      # The refusals did not use up the device's quota: from another IP it has all 3.
+      for _ <- 1..3 do
+        assert :ok =
+                 RateLimit.check(:verification_code, device: device, ip: Ecto.UUID.generate())
+      end
     end
 
     test "actions count separately" do
@@ -47,8 +59,7 @@ defmodule Freguesia.RateLimitTest do
     end
 
     test "ignores keys without a value" do
-      for _ <- 1..10,
-          do: assert(:ok = RateLimit.check(:verification_code, device: nil, ip24: nil))
+      for _ <- 1..10, do: assert(:ok = RateLimit.check(:verification_code, device: nil, ip: nil))
     end
 
     test "always allows when turned off" do
@@ -57,6 +68,39 @@ defmodule Freguesia.RateLimitTest do
 
       for _ <- 1..10, do: assert(:ok = RateLimit.check(:verification_code, keys))
     end
+  end
+
+  describe "ip_key/1" do
+    test "IPv4: one key per address" do
+      assert RateLimit.ip_key("200.10.20.30") == RateLimit.ip_key("200.10.20.30")
+      refute RateLimit.ip_key("200.10.20.30") == RateLimit.ip_key("200.10.20.31")
+    end
+
+    test "IPv6: one key per /64" do
+      key = RateLimit.ip_key("2804:14c:1:2:aaaa:bbbb:cccc:dddd")
+
+      assert is_binary(key)
+      assert key == RateLimit.ip_key("2804:14c:1:2::1")
+      refute key == RateLimit.ip_key("2804:14c:1:3::1")
+    end
+
+    test "an IPv4 address mapped into IPv6 is the same client" do
+      assert RateLimit.ip_key("::ffff:200.10.20.30") == RateLimit.ip_key("200.10.20.30")
+    end
+
+    test "is not the IP in the clear" do
+      refute RateLimit.ip_key("200.10.20.30") =~ "200.10"
+    end
+
+    test "nil for anything that is not an IP" do
+      assert RateLimit.ip_key("not-an-ip") == nil
+      assert RateLimit.ip_key(nil) == nil
+    end
+  end
+
+  test "window_minutes/1 comes from the configured limit" do
+    assert RateLimit.window_minutes(:verification_code) == 10
+    assert RateLimit.window_minutes(:admin_password) == 15
   end
 
   describe "verification code" do

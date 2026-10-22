@@ -44,13 +44,13 @@ defmodule Freguesia.Verification do
   The business account that signs up becomes the place's owner (PRD §6).
 
   `client_keys` identify who is asking (device, IP) for the code rate limit
-  (`Freguesia.RateLimit`).
+  (`Freguesia.RateLimit`); `[]` means no limit.
 
   Returns `{:ok, place, delivery}`, with `delivery` set to `:sent` or `:failed`
   (the place stays `pending` even if the send fails), `{:error, changeset}`
   with the form errors, or `{:error, :rate_limited}` before anything is saved.
   """
-  def submit_signup(attrs, owner_account_id, client_keys \\ []) do
+  def submit_signup(attrs, owner_account_id, client_keys) do
     changeset = change_signup(attrs)
 
     cond do
@@ -87,7 +87,7 @@ defmodule Freguesia.Verification do
   Resends the code. Only after 60 seconds since the last send, and within the
   `client_keys` rate limit (see `submit_signup/3`).
   """
-  def resend_code(place_id, client_keys \\ []) do
+  def resend_code(place_id, client_keys) do
     place = Repo.get!(Place, place_id)
     last = last_code(place.id)
 

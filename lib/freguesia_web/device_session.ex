@@ -5,11 +5,14 @@ defmodule FreguesiaWeb.DeviceSession do
     * `device_id`: random UUID in a signed cookie, `HttpOnly`, `SameSite=Lax`.
       Not a fingerprint: it is just a random number.
     * `ip24`: hash of the IP /24 for anti-fraud. Goes into the session, never in the clear.
+    * `rate_ip`: HMAC of the IP (IPv4) or its /64 (IPv6) for `Freguesia.RateLimit`.
 
-  Both are kept in `conn.assigns` and in the session, so the LiveView can read them on mount.
+  They are kept in the session (and `device_id` in `conn.assigns`), so the LiveView can
+  read them on mount.
   """
   import Plug.Conn
 
+  alias Freguesia.RateLimit
   alias Freguesia.Reports.Antifraud
 
   @cookie "device_id"
@@ -43,23 +46,27 @@ defmodule FreguesiaWeb.DeviceSession do
   session, or `get_session/1` on a conn).
   """
   def rate_limit_keys(session) when is_map(session) do
-    [device: session["device_id"], ip24: session["ip24"]]
+    [device: session["device_id"], ip: session["rate_ip"]]
   end
 
   defp assign_device(conn, device_id) do
-    ip24 = Antifraud.ip24_hash_from_text(client_ip(conn))
+    ip = client_ip(conn)
 
     conn
     |> assign(:device_id, device_id)
     |> put_session("device_id", device_id)
-    |> put_session("ip24", ip24)
+    |> put_session("ip24", Antifraud.ip24_hash_from_text(ip))
+    |> put_session("rate_ip", RateLimit.ip_key(ip))
   end
 
-  # Behind the Fly proxy, the real IP arrives in `fly-client-ip`.
+  # Behind the Fly proxy (production), the real IP arrives in `fly-client-ip`. Anywhere
+  # else the client could send that header itself, so it is read only when configured.
   defp client_ip(conn) do
-    case get_req_header(conn, "fly-client-ip") do
-      [ip | _] -> ip
-      [] -> conn.remote_ip |> :inet.ntoa() |> to_string()
+    with header when is_binary(header) <- Application.get_env(:freguesia, :client_ip_header),
+         [ip | _] <- get_req_header(conn, header) do
+      ip
+    else
+      _ -> conn.remote_ip |> :inet.ntoa() |> to_string()
     end
   end
 end

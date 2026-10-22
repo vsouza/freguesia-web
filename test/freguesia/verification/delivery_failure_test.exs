@@ -19,7 +19,11 @@ defmodule Freguesia.Verification.DeliveryFailureTest do
 
   test "failed delivery leaves the place pending and returns :failed" do
     assert {:ok, place, :failed} =
-             Verification.submit_signup(Fixtures.signup_params(), Fixtures.business_account().id)
+             Verification.submit_signup(
+               Fixtures.signup_params(),
+               Fixtures.business_account().id,
+               []
+             )
 
     assert place.status == :pending
   end

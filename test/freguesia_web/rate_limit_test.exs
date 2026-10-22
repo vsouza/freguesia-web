@@ -1,19 +1,16 @@
 defmodule FreguesiaWeb.RateLimitTest do
-  # async: false on purpose. The rate limit is off in test and this module turns it on
-  # globally; in an async module it would leak into other tests sharing 127.0.0.1.
+  # async: false on purpose: see Freguesia.RateLimitHelpers. The client IP header test
+  # also swaps global config.
   use FreguesiaWeb.ConnCase, async: false
 
+  import Freguesia.RateLimitHelpers
   import Phoenix.LiveViewTest
 
   alias Freguesia.{Admin, Fixtures, RateLimit}
 
-  setup do
-    previous = Application.get_env(:freguesia, RateLimit)
-    Application.put_env(:freguesia, RateLimit, enabled: true)
-    :ets.delete_all_objects(RateLimit)
-    on_exit(fn -> Application.put_env(:freguesia, RateLimit, previous) end)
-    :ok
-  end
+  setup :enable_rate_limit
+
+  @wrong_password "errada-errada-errada"
 
   describe "place signup" do
     test "the 4th code request from the same IP stays on the form with an error", %{conn: conn} do
@@ -32,78 +29,40 @@ defmodule FreguesiaWeb.RateLimitTest do
     end
   end
 
-  # A fresh signup page, filled in and submitted. Picking the segment first shows the
-  # food type field.
-  defp submit_signup(conn) do
-    {:ok, view, _html} = live(conn, ~p"/business/register")
-
-    view
-    |> element("#signup-form")
-    |> render_change(%{"signup" => %{"segment_id" => Fixtures.restaurants().id}})
-
-    view |> form("#signup-form", signup: Fixtures.signup_params()) |> render_submit()
-    view
-  end
-
-  describe "backoffice login" do
-    test "after 5 password attempts, even the right password gets 429", %{conn: conn} do
+  describe "backoffice password" do
+    test "after 5 attempts from one IP, even the right password gets 429", %{conn: conn} do
       operator = Fixtures.operator()
 
       for _ <- 1..5 do
-        conn =
-          post(conn, ~p"/admin/sign-in", %{
-            "operator" => %{"email" => operator.email, "password" => "errada-errada-errada"}
-          })
-
-        assert html_response(conn, 200)
+        assert conn |> post_password(operator.email, @wrong_password) |> html_response(200)
       end
 
-      conn =
-        post(conn, ~p"/admin/sign-in", %{
-          "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
-        })
+      conn = post_password(conn, operator.email, Fixtures.password())
 
       assert html_response(conn, 429)
       assert get_session(conn, :pending_operator_id) == nil
     end
 
-    test "the email limit ignores case and spaces", %{conn: conn} do
+    test "failures from another IP do not lock the operator out", %{conn: conn} do
       operator = Fixtures.operator()
+      attacker = %{conn | remote_ip: {10, 0, 0, 1}}
 
-      for variant <- [operator.email, String.upcase(operator.email), " #{operator.email} "] do
-        for _ <- 1..2 do
-          post(conn, ~p"/admin/sign-in", %{
-            "operator" => %{"email" => variant, "password" => "errada-errada-errada"}
-          })
-        end
-      end
+      for _ <- 1..10, do: post_password(attacker, operator.email, @wrong_password)
 
-      # 6 attempts so far; a new IP does not help, the email is over the limit.
-      assert {:error, :rate_limited} =
-               RateLimit.check(:admin_password,
-                 email: operator.email,
-                 ip24: Ecto.UUID.generate()
-               )
+      conn = post_password(conn, operator.email, Fixtures.password())
+      assert redirected_to(conn) == ~p"/admin/sign-in/2fa-setup"
+      assert get_session(conn, :pending_operator_id) == operator.id
     end
+  end
 
-    test "after 5 wrong app codes, even the right code gets 429", %{conn: conn} do
-      operator = Fixtures.operator()
-      {:ok, operator, _uri} = Admin.start_totp_enrollment(operator)
-
-      {:ok, operator} =
-        Admin.confirm_totp_enrollment(
-          operator,
-          NimbleTOTP.verification_code(operator.totp_secret)
-        )
-
-      conn =
-        post(conn, ~p"/admin/sign-in", %{
-          "operator" => %{"email" => operator.email, "password" => Fixtures.password()}
-        })
-
+  describe "backoffice app code" do
+    test "after 5 wrong codes, even the right code gets 429", %{conn: conn} do
+      operator = enrolled_operator()
+      conn = post_password(conn, operator.email, Fixtures.password())
       assert redirected_to(conn) == ~p"/admin/sign-in/code"
+
       right_code = NimbleTOTP.verification_code(operator.totp_secret)
-      wrong_code = if right_code == "000000", do: "111111", else: "000000"
+      wrong_code = wrong_code(right_code)
 
       conn =
         Enum.reduce(1..5, conn, fn _, conn ->
@@ -119,5 +78,85 @@ defmodule FreguesiaWeb.RateLimitTest do
       assert html_response(conn, 429)
       assert get_session(conn, :operator_id) == nil
     end
+
+    test "first setup: after 5 wrong codes, even the right code gets 429", %{conn: conn} do
+      operator = Fixtures.operator()
+      conn = post_password(conn, operator.email, Fixtures.password())
+      assert redirected_to(conn) == ~p"/admin/sign-in/2fa-setup"
+
+      {:ok, operator, _uri} = Admin.start_totp_enrollment(operator)
+      right_code = NimbleTOTP.verification_code(operator.totp_secret)
+      wrong_code = wrong_code(right_code)
+
+      conn =
+        Enum.reduce(1..5, conn, fn _, conn ->
+          conn =
+            post(recycle(conn), ~p"/admin/sign-in/2fa-setup", %{
+              "totp" => %{"code" => wrong_code}
+            })
+
+          assert redirected_to(conn) == ~p"/admin/sign-in/2fa-setup"
+          conn
+        end)
+
+      conn =
+        post(recycle(conn), ~p"/admin/sign-in/2fa-setup", %{"totp" => %{"code" => right_code}})
+
+      assert html_response(conn, 429)
+      assert get_session(conn, :operator_id) == nil
+    end
   end
+
+  describe "client IP" do
+    setup do
+      previous = Application.get_env(:freguesia, :client_ip_header)
+      on_exit(fn -> Application.put_env(:freguesia, :client_ip_header, previous) end)
+    end
+
+    test "the Fly header is ignored unless configured", %{conn: conn} do
+      Application.delete_env(:freguesia, :client_ip_header)
+
+      conn = conn |> put_req_header("fly-client-ip", "10.9.8.7") |> get(~p"/terms")
+
+      assert get_session(conn, "rate_ip") == RateLimit.ip_key("127.0.0.1")
+    end
+
+    test "the configured header gives the client IP", %{conn: conn} do
+      Application.put_env(:freguesia, :client_ip_header, "fly-client-ip")
+
+      conn = conn |> put_req_header("fly-client-ip", "10.9.8.7") |> get(~p"/terms")
+
+      assert get_session(conn, "rate_ip") == RateLimit.ip_key("10.9.8.7")
+    end
+  end
+
+  # A fresh signup page, filled in and submitted. Picking the segment first shows the
+  # food type field.
+  defp submit_signup(conn) do
+    {:ok, view, _html} = live(conn, ~p"/business/register")
+
+    view
+    |> element("#signup-form")
+    |> render_change(%{"signup" => %{"segment_id" => Fixtures.restaurants().id}})
+
+    view |> form("#signup-form", signup: Fixtures.signup_params()) |> render_submit()
+    view
+  end
+
+  defp post_password(conn, email, password) do
+    post(conn, ~p"/admin/sign-in", %{"operator" => %{"email" => email, "password" => password}})
+  end
+
+  # Operator with the authenticator app already set up.
+  defp enrolled_operator do
+    {:ok, operator, _uri} = Admin.start_totp_enrollment(Fixtures.operator())
+
+    {:ok, operator} =
+      Admin.confirm_totp_enrollment(operator, NimbleTOTP.verification_code(operator.totp_secret))
+
+    operator
+  end
+
+  defp wrong_code("000000"), do: "111111"
+  defp wrong_code(_right_code), do: "000000"
 end

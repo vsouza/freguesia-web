@@ -8,7 +8,7 @@ defmodule FreguesiaWeb.SignupLive do
   """
   use FreguesiaWeb, :live_view
 
-  alias Freguesia.{Catalog, Verification}
+  alias Freguesia.{Catalog, RateLimit, Verification}
   alias FreguesiaWeb.DeviceSession
   alias Phoenix.HTML.Form
 
@@ -361,6 +361,9 @@ defmodule FreguesiaWeb.SignupLive do
   defp code_error_message(:expired), do: gettext("This code has expired. Request a new one.")
   defp code_error_message(:no_code), do: gettext("Request a code to continue.")
 
-  defp rate_limited_message,
-    do: gettext("Too many codes requested. Wait 10 minutes and try again.")
+  defp rate_limited_message do
+    gettext("Too many codes requested. Wait %{minutes} minutes and try again.",
+      minutes: RateLimit.window_minutes(:verification_code)
+    )
+  end
 end
