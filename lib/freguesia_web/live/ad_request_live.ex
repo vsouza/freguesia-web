@@ -23,10 +23,10 @@ defmodule FreguesiaWeb.AdRequestLive do
          |> assign(
            page_title: gettext("Ad on the place page"),
            place: place,
-           requests: Sponsorships.list_for_place(place.id),
            day_options: day_options(),
            form: new_form()
-         )}
+         )
+         |> stream_requests()}
     end
   end
 
@@ -41,10 +41,8 @@ defmodule FreguesiaWeb.AdRequestLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Sent for review. It shows up once approved."))
-         |> assign(
-           requests: Sponsorships.list_for_place(socket.assigns.place.id),
-           form: new_form()
-         )}
+         |> assign(form: new_form())
+         |> stream_requests()}
 
       {:error, errors} ->
         form =
@@ -59,6 +57,14 @@ defmodule FreguesiaWeb.AdRequestLive do
   end
 
   defp new_form, do: to_form(%{"title" => "", "body" => "", "days" => "3"}, as: :ad)
+
+  defp stream_requests(socket) do
+    requests = Sponsorships.list_for_place(socket.assigns.place.id)
+
+    socket
+    |> assign(requests_empty?: requests == [])
+    |> stream(:requests, requests, reset: true, dom_id: &"ad-request-#{&1.id}")
+  end
 
   defp day_options do
     for days <- 1..Sponsorships.max_days() do
@@ -107,20 +113,22 @@ defmodule FreguesiaWeb.AdRequestLive do
         </button>
       </.form>
 
-      <section :if={@requests != []} id="ad-requests" class="mt-10 flex flex-col gap-3">
+      <section :if={!@requests_empty?} class="mt-10 flex flex-col gap-3">
         <h2 class="text-sm font-bold uppercase tracking-wide text-muted">
           {gettext("Your requests")}
         </h2>
-        <article
-          :for={request <- @requests}
-          id={"ad-request-#{request.id}"}
-          class="flex items-center justify-between gap-3 rounded-tile bg-white p-4 shadow-card"
-        >
-          <span class="font-semibold text-ink">{request.promotion.title}</span>
-          <span class="rounded-full bg-sand px-3 py-1 text-xs font-bold text-ink-2">
-            {status_label(request.status)}
-          </span>
-        </article>
+        <div id="ad-requests" phx-update="stream" class="flex flex-col gap-3">
+          <article
+            :for={{dom_id, request} <- @streams.requests}
+            id={dom_id}
+            class="flex items-center justify-between gap-3 rounded-tile bg-white p-4 shadow-card"
+          >
+            <span class="font-semibold text-ink">{request.promotion.title}</span>
+            <span class="rounded-full bg-sand px-3 py-1 text-xs font-bold text-ink-2">
+              {status_label(request.status)}
+            </span>
+          </article>
+        </div>
       </section>
 
       <.link

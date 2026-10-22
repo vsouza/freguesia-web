@@ -13,7 +13,12 @@ defmodule FreguesiaWeb.BusinessAccountLive do
 
     {:ok,
      socket
-     |> assign(page_title: gettext("Your places"), places: places, summaries: summaries(places))}
+     |> assign(
+       page_title: gettext("Your places"),
+       summaries: summaries(places),
+       places_empty?: places == []
+     )
+     |> stream(:places, places, dom_id: &"business-place-#{&1.id}")}
   end
 
   defp summaries(places) do
@@ -40,8 +45,8 @@ defmodule FreguesiaWeb.BusinessAccountLive do
         )}
       </p>
 
-      <ul :if={@places != []} id="business-places" class="mt-6 flex flex-col gap-4">
-        <li :for={place <- @places} id={"business-place-#{place.id}"}>
+      <ul id="business-places" phx-update="stream" class="mt-6 flex flex-col gap-4">
+        <li :for={{dom_id, place} <- @streams.places} id={dom_id}>
           <article class="flex flex-col gap-3 rounded-card bg-white p-5 shadow-card">
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -84,7 +89,7 @@ defmodule FreguesiaWeb.BusinessAccountLive do
         </li>
       </ul>
 
-      <div :if={@places == []} id="no-places" class="mt-6">
+      <div :if={@places_empty?} id="no-places" class="mt-6">
         <FreguesiaWeb.Components.empty_state title={gettext("No places yet")}>
           {gettext("Register your place to get a verified WhatsApp number in the catalog.")}
         </FreguesiaWeb.Components.empty_state>

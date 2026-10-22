@@ -21,7 +21,9 @@ defmodule FreguesiaWeb.BusinessSignInLive do
        page_title: gettext("Business sign-in"),
        firebase_config: firebase,
        firebase_json: firebase && Jason.encode!(firebase),
-       dev_sign_in?: Business.dev_identity?()
+       email_form: to_form(%{"email" => "", "password" => ""}, as: :firebase),
+       dev_sign_in?: Business.dev_identity?(),
+       dev_form: to_form(%{"email" => ""})
      )}
   end
 
@@ -68,21 +70,25 @@ defmodule FreguesiaWeb.BusinessSignInLive do
           {gettext("Continue with Apple")}
         </button>
 
-        <form id="firebase-email-form" class="mt-2 flex flex-col gap-2 rounded-card bg-sand p-5">
-          <label for="firebase-email" class="text-sm font-bold text-ink-2">{gettext("E-mail")}</label>
-          <input
+        <.form
+          for={@email_form}
+          id="firebase-email-form"
+          class="mt-2 flex flex-col gap-2 rounded-card bg-sand p-5"
+        >
+          <.input
+            field={@email_form[:email]}
             id="firebase-email"
             type="email"
+            label={gettext("E-mail")}
             autocomplete="username"
             disabled={@firebase_config == nil}
             class="h-12 rounded-full border border-line bg-white px-5 text-base disabled:opacity-50"
           />
-          <label for="firebase-password" class="text-sm font-bold text-ink-2">
-            {gettext("Password")}
-          </label>
-          <input
+          <.input
+            field={@email_form[:password]}
             id="firebase-password"
             type="password"
+            label={gettext("Password")}
             autocomplete="current-password"
             disabled={@firebase_config == nil}
             class="h-12 rounded-full border border-line bg-white px-5 text-base disabled:opacity-50"
@@ -107,7 +113,7 @@ defmodule FreguesiaWeb.BusinessSignInLive do
               {gettext("Create account")}
             </button>
           </div>
-        </form>
+        </.form>
 
         <p id="firebase-error" role="alert" class="text-sm font-bold text-tomato-600" hidden></p>
       </div>
@@ -116,8 +122,9 @@ defmodule FreguesiaWeb.BusinessSignInLive do
         {gettext("Google, Apple and e-mail sign-in are not enabled in this environment yet.")}
       </p>
 
-      <form
+      <.form
         :if={@dev_sign_in?}
+        for={@dev_form}
         id="dev-sign-in-form"
         action={~p"/business/session"}
         method="post"
@@ -126,13 +133,11 @@ defmodule FreguesiaWeb.BusinessSignInLive do
         <p class="text-xs font-bold uppercase tracking-wide text-muted">
           {gettext("Development sign-in")}
         </p>
-        <label for="dev-sign-in-email" class="text-sm font-bold text-ink-2">
-          {gettext("E-mail")}
-        </label>
-        <input
+        <.input
+          field={@dev_form[:email]}
           id="dev-sign-in-email"
           type="email"
-          name="email"
+          label={gettext("E-mail")}
           required
           placeholder="voce@exemplo.com"
           class="h-12 rounded-full border border-line bg-white px-5 text-base"
@@ -144,7 +149,7 @@ defmodule FreguesiaWeb.BusinessSignInLive do
         >
           {gettext("Sign in")}
         </button>
-      </form>
+      </.form>
     </Layouts.app>
     """
   end

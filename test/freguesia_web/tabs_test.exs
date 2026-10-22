@@ -25,10 +25,16 @@ defmodule FreguesiaWeb.TabsTest do
     )
   end
 
+  # The promotions and profile pages are controller renders, not LiveViews, so their
+  # markup is checked as a parsed document rather than with has_element?/2.
+  defp html_has?(html, selector) do
+    html |> LazyHTML.from_document() |> LazyHTML.query(selector) |> Enum.any?()
+  end
+
   describe "promotions tab" do
     test "shows an empty state when nothing is running", %{conn: conn} do
       html = conn |> get(~p"/promotions") |> html_response(200)
-      assert html =~ ~s(id="no-promotions")
+      assert html_has?(html, "#no-promotions")
     end
 
     test "lists approved promotions that are running, not pending or expired", %{conn: conn} do
@@ -39,9 +45,9 @@ defmodule FreguesiaWeb.TabsTest do
 
       html = conn |> get(~p"/promotions") |> html_response(200)
 
-      assert html =~ ~s(id="promotion-#{running.id}")
-      refute html =~ ~s(id="promotion-#{expired.id}")
-      refute html =~ ~s(id="no-promotions")
+      assert html_has?(html, "#promotion-#{running.id}")
+      refute html_has?(html, "#promotion-#{expired.id}")
+      refute html_has?(html, "#no-promotions")
     end
   end
 
@@ -80,8 +86,8 @@ defmodule FreguesiaWeb.TabsTest do
     conn = get(conn, ~p"/profile")
     html = html_response(conn, 200)
 
-    assert html =~ ~s(id="profile-guest")
-    assert html =~ ~s(href="/business/sign-in")
+    assert html_has?(html, "#profile-guest")
+    assert html_has?(html, ~s(a[href="/business/sign-in"]))
   end
 
   test "the bottom bar has five tabs", %{conn: conn} do

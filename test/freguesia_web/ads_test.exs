@@ -39,8 +39,7 @@ defmodule FreguesiaWeb.AdsTest do
     |> form("#ad-form", ad: %{"title" => "Sobremesa grátis", "body" => "", "days" => "2"})
     |> render_submit()
 
-    assert render(view) =~ "Sobremesa grátis"
-    assert has_element?(view, "#ad-requests")
+    assert has_element?(view, "#ad-requests", "Sobremesa grátis")
     assert Sponsorships.own_detail_for(place.id) == nil
   end
 
@@ -57,15 +56,14 @@ defmodule FreguesiaWeb.AdsTest do
     {:ok, sponsorship} =
       Sponsorships.request_own_ad(place, %{"title" => "Entrada grátis", "days" => "5"})
 
-    html = conn |> get(~p"/places/#{place.slug}") |> html_response(200)
-    refute html =~ ~s(id="own-ad")
+    {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
+    refute has_element?(view, "#own-ad")
 
     {:ok, :approved} = Sponsorships.approve(sponsorship.id, Fixtures.operator())
 
-    {:ok, _view, html} = live(conn, ~p"/places/#{place.slug}")
-    assert html =~ ~s(id="own-ad")
-    assert html =~ "Entrada grátis"
-    assert html =~ "Anúncio · pago pelo lugar"
+    {:ok, view, _html} = live(conn, ~p"/places/#{place.slug}")
+    assert has_element?(view, "#own-ad", "Entrada grátis")
+    assert has_element?(view, "#own-ad", "Anúncio · pago pelo lugar")
   end
 
   test "the operator approves an ad from the backoffice queue", %{conn: conn} do

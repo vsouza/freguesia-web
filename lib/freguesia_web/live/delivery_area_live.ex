@@ -32,16 +32,20 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
            radius_m: radius_m,
            point: DeliveryAreas.point_of(place.id),
            included: included_ids(neighborhoods, radius_m, area)
-         )}
+         )
+         |> assign_form()}
     end
   end
 
   @impl true
   def handle_event("change", params, socket) do
-    radius_m = radius_from(params["area"]["radius_km"]) || socket.assigns.radius_m
-    included = MapSet.new(params["area"]["included"] || [])
+    area = params["area"] || %{}
+    radius_m = radius_from(area["radius_km"]) || socket.assigns.radius_m
 
-    {:noreply, assign(socket, radius_m: radius_m, included: included)}
+    {:noreply,
+     socket
+     |> assign(radius_m: radius_m, included: included_from(area["included"]))
+     |> assign_form()}
   end
 
   # The owner stands at the place and taps "Use my location". The distances change,
@@ -60,7 +64,8 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
            point: point,
            neighborhoods: neighborhoods,
            included: included_ids(neighborhoods, socket.assigns.radius_m, area)
-         )}
+         )
+         |> assign_form()}
 
       {:error, :outside_pilot} ->
         {:noreply,
@@ -81,8 +86,9 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
   end
 
   def handle_event("save", params, socket) do
-    radius_m = radius_from(params["area"]["radius_km"]) || socket.assigns.radius_m
-    included = MapSet.new(params["area"]["included"] || [])
+    fields = params["area"] || %{}
+    radius_m = radius_from(fields["radius_km"]) || socket.assigns.radius_m
+    included = included_from(fields["included"])
 
     # Neighborhoods inside the radius that the owner did not keep become exclusions.
     excluded =
@@ -100,7 +106,8 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
            has_area?: true,
            radius_m: area.radius_m,
            included: included_ids(socket.assigns.neighborhoods, area.radius_m, area)
-         )}
+         )
+         |> assign_form()}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Choose a radius between 0.5 and 6 km."))}
@@ -115,6 +122,17 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
     |> inside(radius_m)
     |> Enum.reject(&(&1.id in excluded))
     |> MapSet.new(& &1.id)
+  end
+
+  # Each kept neighborhood sends its checkbox as "true" under its id; the hidden companion
+  # sends "false" for the rest. Only the kept ids come back.
+  defp included_from(kept) do
+    for {id, "true"} <- kept || %{}, into: MapSet.new(), do: id
+  end
+
+  defp assign_form(socket) do
+    form = to_form(%{"radius_km" => format_km(socket.assigns.radius_m)}, as: :area)
+    assign(socket, form: form)
   end
 
   defp inside(neighborhoods, radius_m) do
@@ -169,32 +187,27 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
         </p>
       </section>
 
-      <form
+      <.form
+        for={@form}
         id="delivery-area-form"
         phx-change="change"
         phx-submit="save"
         class="mt-6 flex flex-col gap-6"
       >
         <div class="flex flex-col gap-2 rounded-card bg-sand p-5">
-          <label
-            for="radius-km"
-            class="flex items-baseline justify-between text-sm font-bold text-ink"
-          >
-            {gettext("Radius from the place")}
-            <output id="radius-output" class="text-lg font-extrabold">
-              {format_km(@radius_m)} km
-            </output>
-          </label>
-          <input
+          <.input
+            field={@form[:radius_km]}
             id="radius-km"
             type="range"
-            name="area[radius_km]"
+            label={gettext("Radius from the place")}
             min="0.5"
             max="6"
             step="0.5"
-            value={format_km(@radius_m)}
             class="w-full accent-ink"
           />
+          <output id="radius-output" for="radius-km" class="text-lg font-extrabold text-ink">
+            {format_km(@radius_m)} km
+          </output>
           <p class="text-xs text-muted">
             {gettext(
               "Customers inside the radius see your place. Remove a neighborhood below if you don't deliver there."
@@ -206,7 +219,7 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
           <legend class="mb-2 text-sm font-bold text-ink">{gettext("Neighborhoods")}</legend>
           <ul id="neighborhood-list" class="flex flex-col gap-2">
             <li :for={neighborhood <- @neighborhoods} id={"neighborhood-#{neighborhood.slug}"}>
-              <label class={[
+              <div class={[
                 "flex min-h-12 items-center justify-between gap-3 rounded-tile border px-4",
                 (neighborhood.distance_m != nil and neighborhood.distance_m <= @radius_m) &&
                   "border-line bg-white",
@@ -214,20 +227,19 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
                   "border-dashed border-line bg-sand text-muted"
               ]}>
                 <span class="font-semibold">{neighborhood.name}</span>
-                <span class="flex items-center gap-3 text-xs">
+                <span class="flex items-center gap-3 text-xs [&>div]:mb-0">
                   <span :if={neighborhood.distance_m != nil and neighborhood.distance_m > @radius_m}>
                     {gettext("Outside the radius")}
                   </span>
-                  <input
+                  <.input
                     :if={neighborhood.distance_m != nil and neighborhood.distance_m <= @radius_m}
                     type="checkbox"
-                    name="area[included][]"
-                    value={neighborhood.id}
+                    id={"area-included-#{neighborhood.id}"}
+                    name={"area[included][#{neighborhood.id}]"}
                     checked={MapSet.member?(@included, neighborhood.id)}
-                    class="size-5 accent-ink"
                   />
                 </span>
-              </label>
+              </div>
             </li>
           </ul>
         </fieldset>
@@ -249,7 +261,7 @@ defmodule FreguesiaWeb.DeliveryAreaLive do
         >
           {gettext("Save delivery area")}
         </button>
-      </form>
+      </.form>
 
       <script :type={Phoenix.LiveView.ColocatedHook} name=".PlacePoint">
         export default {

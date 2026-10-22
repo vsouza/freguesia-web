@@ -100,24 +100,17 @@ defmodule Freguesia.Business do
   defp upsert_account(claims) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
+    # The uid and the login time come from the verified token, so they are set on the
+    # struct and never cast from params.
     attrs = %{
-      firebase_uid: claims.uid,
       email: claims.email,
       name: claims.name,
       avatar_url: claims.picture,
-      provider: claims.provider,
-      last_login_at: now
+      provider: claims.provider
     }
 
-    %Account{}
-    |> Ecto.Changeset.cast(attrs, [
-      :firebase_uid,
-      :email,
-      :name,
-      :avatar_url,
-      :provider,
-      :last_login_at
-    ])
+    %Account{firebase_uid: claims.uid, last_login_at: now}
+    |> Ecto.Changeset.cast(attrs, [:email, :name, :avatar_url, :provider])
     |> Ecto.Changeset.validate_required([:firebase_uid])
     |> Repo.insert(
       on_conflict:

@@ -99,9 +99,15 @@ defmodule FreguesiaWeb.BusinessTest do
 
       assert has_element?(view, "#neighborhood-#{place.neighborhood.slug}")
 
+      # The owner unticks the place's own neighborhood, which is always inside the radius.
       view
-      |> form("#delivery-area-form", area: %{"radius_km" => "1.0", "included" => []})
-      |> render_submit()
+      |> element("#delivery-area-form")
+      |> render_submit(%{
+        "area" => %{
+          "radius_km" => "1.0",
+          "included" => %{place.neighborhood.id => "false"}
+        }
+      })
 
       area = DeliveryAreas.get_for_place(place.id)
       assert area.radius_m == 1000
@@ -114,18 +120,18 @@ defmodule FreguesiaWeb.BusinessTest do
       place = Fixtures.verified_place(%{name: "Ponto do Dono"})
       Business.add_owner(account.id, place.id)
 
-      {:ok, view, html} =
+      {:ok, view, _html} =
         live(
           Fixtures.sign_in_business(conn, account),
           ~p"/business/places/#{place.id}/delivery-area"
         )
 
-      assert html =~ "Ponto atual:"
+      assert has_element?(view, "#point-status", "Ponto atual:")
 
       render_hook(view, "set_point", %{"lat" => -19.938, "lng" => -43.939})
 
       assert has_element?(view, "#point-status", "-19.93800, -43.93900")
-      assert render(view) =~ "Localização salva"
+      assert has_element?(view, "#flash-info", "Localização salva")
     end
 
     test "a location outside the pilot is refused with a message", %{conn: conn} do
@@ -139,8 +145,8 @@ defmodule FreguesiaWeb.BusinessTest do
           ~p"/business/places/#{place.id}/delivery-area"
         )
 
-      html = render_hook(view, "set_point", %{"lat" => -20.5, "lng" => -44.5})
-      assert html =~ "fora dos bairros do piloto"
+      render_hook(view, "set_point", %{"lat" => -20.5, "lng" => -44.5})
+      assert has_element?(view, "#flash-error", "fora dos bairros do piloto")
     end
 
     test "a radius outside the allowed range is refused and nothing changes", %{conn: conn} do
@@ -156,8 +162,8 @@ defmodule FreguesiaWeb.BusinessTest do
         )
 
       view
-      |> form("#delivery-area-form", area: %{"radius_km" => "9.0", "included" => []})
-      |> render_submit()
+      |> element("#delivery-area-form")
+      |> render_submit(%{"area" => %{"radius_km" => "9.0", "included" => %{}}})
 
       assert DeliveryAreas.get_for_place(place.id).radius_m == before
     end
