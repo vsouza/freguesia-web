@@ -9,16 +9,18 @@ defmodule FreguesiaWeb.SignupLive do
   use FreguesiaWeb, :live_view
 
   alias Freguesia.{Catalog, Verification}
+  alias FreguesiaWeb.DeviceSession
   alias Phoenix.HTML.Form
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     segments = Catalog.list_segments()
 
     {:ok,
      socket
      |> assign(
        page_title: gettext("Register a place"),
+       client_keys: DeviceSession.rate_limit_keys(session),
        step: 1,
        segments: segments,
        neighborhoods: Catalog.list_pilot_neighborhoods(),
@@ -39,11 +41,18 @@ defmodule FreguesiaWeb.SignupLive do
   end
 
   def handle_event("save", %{"signup" => params}, socket) do
-    case Verification.submit_signup(params, socket.assigns.current_business_account.id) do
+    case Verification.submit_signup(
+           params,
+           socket.assigns.current_business_account.id,
+           socket.assigns.client_keys
+         ) do
       {:ok, place, delivery} ->
         {:noreply,
          socket
          |> assign(step: 2, place: place, delivery: delivery, code_error: nil, code_notice: nil)}
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, rate_limited_message())}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :signup, action: :insert))}
@@ -65,13 +74,16 @@ defmodule FreguesiaWeb.SignupLive do
   end
 
   def handle_event("resend_code", _params, socket) do
-    case Verification.resend_code(socket.assigns.place.id) do
+    case Verification.resend_code(socket.assigns.place.id, socket.assigns.client_keys) do
       {:ok, _code} ->
         {:noreply, assign(socket, code_error: nil, code_notice: gettext("We sent a new code."))}
 
       {:error, :too_soon} ->
         {:noreply,
          assign(socket, code_error: gettext("Wait 60 seconds before requesting another code."))}
+
+      {:error, :rate_limited} ->
+        {:noreply, assign(socket, code_error: rate_limited_message(), code_notice: nil)}
 
       {:error, _delivery_failed} ->
         {:noreply,
@@ -348,4 +360,7 @@ defmodule FreguesiaWeb.SignupLive do
 
   defp code_error_message(:expired), do: gettext("This code has expired. Request a new one.")
   defp code_error_message(:no_code), do: gettext("Request a code to continue.")
+
+  defp rate_limited_message,
+    do: gettext("Too many codes requested. Wait 10 minutes and try again.")
 end

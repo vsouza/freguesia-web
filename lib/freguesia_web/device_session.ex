@@ -38,6 +38,14 @@ defmodule FreguesiaWeb.DeviceSession do
     end
   end
 
+  @doc """
+  Client keys for `Freguesia.RateLimit`, read from the session map (a LiveView's mount
+  session, or `get_session/1` on a conn).
+  """
+  def rate_limit_keys(session) when is_map(session) do
+    [device: session["device_id"], ip24: session["ip24"]]
+  end
+
   defp assign_device(conn, device_id) do
     ip24 = Antifraud.ip24_hash_from_text(client_ip(conn))
 

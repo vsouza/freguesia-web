@@ -7,8 +7,8 @@ defmodule FreguesiaWeb.Admin.SessionController do
 
   import Phoenix.Component, only: [to_form: 2]
 
-  alias Freguesia.Admin
-  alias FreguesiaWeb.AdminAuth
+  alias Freguesia.{Admin, RateLimit}
+  alias FreguesiaWeb.{AdminAuth, DeviceSession}
 
   def index(conn, _params) do
     if conn.assigns[:operator] do
@@ -27,12 +27,18 @@ defmodule FreguesiaWeb.Admin.SessionController do
   end
 
   def create(conn, %{"operator" => %{"email" => email, "password" => password}}) do
-    case Admin.authenticate(email, password) do
-      {:ok, operator} ->
+    with :ok <- RateLimit.check(:admin_password, [{:email, email_key(email)} | client_keys(conn)]),
+         {:ok, operator} <- Admin.authenticate(email, password) do
+      conn
+      |> configure_session(renew: true)
+      |> put_session(:pending_operator_id, operator.id)
+      |> redirect(to: next_step_after_password(operator))
+    else
+      {:error, :rate_limited} ->
         conn
-        |> configure_session(renew: true)
-        |> put_session(:pending_operator_id, operator.id)
-        |> redirect(to: next_step_after_password(operator))
+        |> put_status(:too_many_requests)
+        |> put_flash(:error, rate_limited_message())
+        |> render(:new, form: login_form(email), page_title: gettext("Log in"))
 
       {:error, :invalid} ->
         conn
@@ -50,6 +56,7 @@ defmodule FreguesiaWeb.Admin.SessionController do
 
   def verify_totp(conn, %{"totp" => %{"code" => code}}) do
     with operator when not is_nil(operator) <- pending_operator(conn),
+         :ok <- check_totp_rate(conn, operator),
          {:ok, operator} <- Admin.verify_totp(operator, String.trim(code)) do
       conn
       |> AdminAuth.log_in(operator)
@@ -57,6 +64,12 @@ defmodule FreguesiaWeb.Admin.SessionController do
     else
       nil ->
         redirect(conn, to: ~p"/admin/sign-in")
+
+      {:error, :rate_limited} ->
+        conn
+        |> put_status(:too_many_requests)
+        |> put_flash(:error, rate_limited_message())
+        |> render(:totp, form: totp_form(), page_title: gettext("Code"))
 
       {:error, _reason} ->
         conn
@@ -83,26 +96,29 @@ defmodule FreguesiaWeb.Admin.SessionController do
   end
 
   def confirm_enroll(conn, %{"totp" => %{"code" => code}}) do
-    case pending_operator(conn) do
+    with operator when not is_nil(operator) <- pending_operator(conn),
+         :ok <- check_totp_rate(conn, operator),
+         {:ok, operator} <- Admin.confirm_totp_enrollment(operator, String.trim(code)) do
+      conn
+      |> AdminAuth.log_in(operator)
+      |> put_flash(
+        :info,
+        gettext("Done. From now on the app code is required on every login.")
+      )
+      |> redirect(to: ~p"/admin/verifications")
+    else
       nil ->
         redirect(conn, to: ~p"/admin/sign-in")
 
-      operator ->
-        case Admin.confirm_totp_enrollment(operator, String.trim(code)) do
-          {:ok, operator} ->
-            conn
-            |> AdminAuth.log_in(operator)
-            |> put_flash(
-              :info,
-              gettext("Done. From now on the app code is required on every login.")
-            )
-            |> redirect(to: ~p"/admin/verifications")
+      {:error, :rate_limited} ->
+        conn
+        |> put_flash(:error, rate_limited_message())
+        |> redirect(to: ~p"/admin/sign-in/2fa-setup")
 
-          {:error, _reason} ->
-            conn
-            |> put_flash(:error, gettext("Invalid code. Scan the QR code again if needed."))
-            |> redirect(to: ~p"/admin/sign-in/2fa-setup")
-        end
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, gettext("Invalid code. Scan the QR code again if needed."))
+        |> redirect(to: ~p"/admin/sign-in/2fa-setup")
     end
   end
 
@@ -115,6 +131,19 @@ defmodule FreguesiaWeb.Admin.SessionController do
 
   defp next_step_after_password(%{totp_confirmed_at: nil}), do: ~p"/admin/sign-in/2fa-setup"
   defp next_step_after_password(_operator), do: ~p"/admin/sign-in/code"
+
+  # Rate limits (PRD §13): the password per email, the app code per operator, both also
+  # per device and IP. The code step matters most: past the password, it is 6 digits.
+  defp client_keys(conn), do: DeviceSession.rate_limit_keys(get_session(conn))
+
+  defp check_totp_rate(conn, operator),
+    do: RateLimit.check(:admin_totp, [{:operator, operator.id} | client_keys(conn)])
+
+  defp email_key(email) when is_binary(email), do: email |> String.trim() |> String.downcase()
+  defp email_key(_email), do: nil
+
+  defp rate_limited_message,
+    do: gettext("Too many attempts. Wait 15 minutes and try again.")
 
   defp pending_operator(conn) do
     case get_session(conn, :pending_operator_id) do

@@ -46,3 +46,6 @@ config :freguesia, :photo_dir, Path.join(System.tmp_dir!(), "freguesia-test-phot
 
 # Jobs run inline in tests; the message lands in the Fake and can be read.
 config :freguesia, Oban, testing: :inline
+
+# Every test request comes from 127.0.0.1; the rate limit tests turn this on.
+config :freguesia, Freguesia.RateLimit, enabled: false

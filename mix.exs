@@ -76,6 +76,7 @@ defmodule Freguesia.MixProject do
       {:nimble_totp, "~> 1.0"},
       {:tzdata, "~> 1.1"},
       {:eqrcode, "~> 0.1"},
+      {:hammer, "~> 7.4"},
       {:stream_data, "~> 1.1", only: [:dev, :test]},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},

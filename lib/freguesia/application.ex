@@ -14,6 +14,7 @@ defmodule Freguesia.Application do
       {Phoenix.PubSub, name: Freguesia.PubSub},
       {Oban, Application.fetch_env!(:freguesia, Oban)},
       Freguesia.Messaging.Fake,
+      {Freguesia.RateLimit, clean_period: :timer.minutes(10)},
       # Start a worker by calling: Freguesia.Worker.start_link(arg)
       # {Freguesia.Worker, arg},
       # Start to serve requests, typically the last entry
