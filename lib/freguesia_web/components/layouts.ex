@@ -31,8 +31,8 @@ defmodule FreguesiaWeb.Layouts do
 
   attr :active_tab, :atom,
     default: nil,
-    values: [nil, :home, :search],
-    doc: "the active bottom-nav tab"
+    values: [nil, :home, :search, :promotions, :favorites, :profile],
+    doc: "the active bottom-nav tab (PRD §5: Home, Search, Promotions, Favorites, Profile)"
 
   attr :wide, :boolean, default: false, doc: "use the wider desktop grid for list screens"
 
@@ -43,6 +43,48 @@ defmodule FreguesiaWeb.Layouts do
   def app(assigns) do
     ~H"""
     <div class="flex min-h-dvh flex-col bg-white">
+      <header class="sticky top-0 z-30 hidden border-b border-line bg-white/90 backdrop-blur md:block">
+        <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-3">
+          <.link
+            navigate={~p"/areas/#{@current_neighborhood}"}
+            class="flex items-center gap-2 text-lg font-extrabold"
+          >
+            <span class="flex size-9 items-center justify-center rounded-full bg-ink text-white">
+              f
+            </span>
+            freguesia
+          </.link>
+          <nav aria-label={gettext("Main")} class="flex items-center gap-2 text-sm font-bold">
+            <.link
+              navigate={~p"/how-it-works"}
+              class="rounded-full px-4 py-2 text-ink-2 hover:bg-sand"
+            >
+              {gettext("How it works")}
+            </.link>
+            <.link
+              navigate={~p"/promotions"}
+              class="rounded-full px-4 py-2 text-ink-2 hover:bg-sand"
+            >
+              {gettext("Promotions")}
+            </.link>
+            <.link
+              navigate={~p"/business/register"}
+              class="rounded-full bg-white px-4 py-2 ring-1 ring-line hover:bg-sand"
+            >
+              {gettext("For businesses")}
+            </.link>
+            <.link
+              navigate={~p"/location"}
+              class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-white"
+              aria-label={gettext("Change neighborhood")}
+            >
+              <.icon name="hero-map-pin-mini" class="size-4" />
+              {FreguesiaWeb.Labels.neighborhood_name(@current_neighborhood)}, BH
+            </.link>
+          </nav>
+        </div>
+      </header>
+
       <div
         :if={@gradient}
         class={[
@@ -55,16 +97,20 @@ defmodule FreguesiaWeb.Layouts do
       </div>
 
       <main class={[
-        "mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-28 pt-6 md:max-w-3xl",
-        @wide && "md:max-w-5xl"
+        "mx-auto flex w-full max-w-[430px] flex-1 flex-col px-5 pb-28 pt-6 md:max-w-[720px] md:px-6 lg:max-w-[1200px] md:pb-16",
+        @wide && "2xl:max-w-[1280px]"
       ]}>
         {render_slot(@inner_block)}
       </main>
 
-      <footer class="border-t border-line px-4 py-6 text-center text-xs leading-relaxed text-muted">
-        <nav aria-label={gettext("Legal")} class="mb-3 flex justify-center gap-4 font-bold">
+      <footer class="border-t border-line px-5 py-6 text-center text-xs leading-relaxed text-muted md:px-6 md:text-left">
+        <nav
+          aria-label={gettext("Legal")}
+          class="mb-3 flex justify-center gap-4 font-bold md:justify-end"
+        >
           <.link navigate={~p"/terms"}>Termos</.link>
           <.link navigate={~p"/privacy"}>Privacidade</.link>
+          <.link navigate={~p"/how-it-works"}>{gettext("How it works")}</.link>
           <.link navigate={~p"/how-we-calculate"}>Como calculamos</.link>
         </nav>
         {gettext(
@@ -74,7 +120,7 @@ defmodule FreguesiaWeb.Layouts do
 
       <nav
         aria-label={gettext("Main")}
-        class="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-sm justify-around rounded-full bg-white px-3 py-2 shadow-nav md:max-w-md"
+        class="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-sm justify-around rounded-full bg-white px-3 py-2 shadow-nav md:hidden"
       >
         <.tab_link
           href={~p"/areas/#{@current_neighborhood}"}
@@ -87,6 +133,24 @@ defmodule FreguesiaWeb.Layouts do
           label={gettext("Search")}
           icon="hero-magnifying-glass"
           active={@active_tab == :search}
+        />
+        <.tab_link
+          href={~p"/promotions"}
+          label={gettext("Promotions")}
+          icon="hero-tag"
+          active={@active_tab == :promotions}
+        />
+        <.tab_link
+          href={~p"/favorites"}
+          label={gettext("Favorites")}
+          icon="hero-heart"
+          active={@active_tab == :favorites}
+        />
+        <.tab_link
+          href={~p"/profile"}
+          label={gettext("Profile")}
+          icon="hero-user"
+          active={@active_tab == :profile}
         />
       </nav>
     </div>
@@ -106,7 +170,7 @@ defmodule FreguesiaWeb.Layouts do
       navigate={@href}
       aria-current={@active && "page"}
       class={[
-        "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-full px-5 text-xs font-bold",
+        "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[11px] font-bold leading-tight",
         @active && "bg-ink text-white",
         !@active && "text-ink-2 hover:bg-sand"
       ]}
@@ -154,6 +218,12 @@ defmodule FreguesiaWeb.Layouts do
                 class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"
               >
                 {gettext("Verifications")}
+              </.link>
+              <.link
+                navigate={~p"/admin/ads"}
+                class="rounded-full px-3 py-1.5 text-ink-2 hover:bg-sand"
+              >
+                {gettext("Ads")}
               </.link>
             </nav>
           </div>

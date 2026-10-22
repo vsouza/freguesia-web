@@ -15,5 +15,21 @@ defmodule FreguesiaWeb.PageController do
     end
   end
 
+  # "How it works": three steps, same wording as the welcome screen.
+  def how_it_works(conn, _params) do
+    render(conn, :how_it_works,
+      page_title: gettext("How it works"),
+      current_neighborhood: neighborhood(conn)
+    )
+  end
+
+  # Profile tab. Customer accounts are not in the pilot yet; the screen says so.
+  def profile(conn, _params) do
+    render(conn, :profile,
+      page_title: gettext("Profile"),
+      current_neighborhood: neighborhood(conn)
+    )
+  end
+
   defp neighborhood(conn), do: get_session(conn, "neighborhood") || @default_neighborhood
 end

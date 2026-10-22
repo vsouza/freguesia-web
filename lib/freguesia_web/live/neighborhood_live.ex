@@ -2,7 +2,7 @@ defmodule FreguesiaWeb.NeighborhoodLive do
   @moduledoc """
   Home of a pilot neighborhood (`/areas/:neighborhood`, PRD §5).
 
-  Segment and food-type chips, filters (open now, with perk, verified), name
+  Segment and food-type chips, filters (open now, with perk), name
   search and the place list. The filters live in the URL, so the page can be
   shared and reloaded.
   """
@@ -31,7 +31,9 @@ defmodule FreguesiaWeb.NeighborhoodLive do
            device_id: session["device_id"],
            segments: Labels.segment_order(),
            categories: restaurant_categories(),
-           all_places: Catalog.list_home_places(neighborhood)
+           point: session_point(session, neighborhood),
+           all_places:
+             Catalog.list_home_places(neighborhood, session_point(session, neighborhood))
          )}
     end
   end
@@ -40,7 +42,9 @@ defmodule FreguesiaWeb.NeighborhoodLive do
   def handle_params(params, _uri, socket) do
     filters = parse_filters(params)
     now = DateTime.utc_now()
-    places = Catalog.list_home_places(socket.assigns.neighborhood, now, filters)
+
+    places =
+      Catalog.list_home_places(socket.assigns.neighborhood, socket.assigns.point, now, filters)
 
     track_filter_events(filters, socket)
 
@@ -66,38 +70,75 @@ defmodule FreguesiaWeb.NeighborhoodLive do
       gradient={@gradient}
       wide={true}
     >
-      <header class="flex flex-col gap-1 pb-4">
-        <p class="text-xs font-bold uppercase tracking-wide text-muted">{gettext("Neighborhood")}</p>
-        <h1 class="text-3xl font-extrabold tracking-tight text-ink">{@neighborhood.name}</h1>
-        <p class="text-sm text-muted">
-          {gettext("Verified places, confirmed by the business itself.")}
-        </p>
-      </header>
+      <div class="flex items-center justify-between gap-3 md:hidden">
+        <button
+          type="button"
+          aria-label={gettext("Menu")}
+          class="flex size-11 items-center justify-center rounded-full bg-white shadow-card"
+        >
+          <.icon name="hero-squares-2x2" class="size-5" />
+        </button>
+        <.link
+          navigate={~p"/location"}
+          class="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold shadow-card"
+        >
+          <.icon name="hero-map-pin-mini" class="size-4 text-tomato-500" />
+          {FreguesiaWeb.Labels.neighborhood_name(@neighborhood.slug)}, BH
+        </.link>
+        <span
+          aria-hidden="true"
+          class="flex size-11 items-center justify-center rounded-full bg-white shadow-card"
+        >
+          <.icon name="hero-bell" class="size-5" />
+        </span>
+      </div>
 
-      <form
-        id="home-search"
-        method="get"
-        action={~p"/areas/#{@neighborhood.slug}"}
-        class="flex flex-col gap-3"
-      >
-        <.hidden_filters filters={@filters} />
-        <label for="home-search-input" class="sr-only">{gettext("Search by name")}</label>
-        <input
-          id="home-search-input"
-          type="search"
-          name="q"
-          value={@filters.query}
-          placeholder={gettext("Search by name")}
-          class="block h-12 w-full rounded-full border border-line bg-white px-5 text-base text-ink placeholder:text-muted focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+      <div class="mt-6 flex flex-col gap-4 md:mt-2 md:flex-row md:items-end md:justify-between">
+        <FreguesiaWeb.Components.two_line_title
+          first={gettext("Order direct,")}
+          second={gettext("pay the regular's price.")}
         />
-      </form>
 
-      <nav aria-label={gettext("Segments")} class="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <form
+          id="home-search"
+          method="get"
+          action={~p"/areas/#{@neighborhood.slug}"}
+          class="flex w-full items-end gap-3 md:w-[480px]"
+        >
+          <.hidden_filters filters={@filters} />
+          <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+            <label for="home-search-input" class="text-xs font-bold text-ink-2">
+              {gettext("Place name")}
+            </label>
+            <input
+              id="home-search-input"
+              type="search"
+              name="q"
+              value={@filters.query}
+              placeholder={gettext("e.g. Forno Velho")}
+              class="block h-12 w-full rounded-full border border-line bg-white px-5 text-base text-ink placeholder:text-muted focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+            />
+          </div>
+          <button
+            type="submit"
+            aria-label={gettext("Search")}
+            class="flex size-12 flex-none items-center justify-center rounded-full bg-ink text-white"
+          >
+            <.icon name="hero-magnifying-glass" class="size-5" />
+          </button>
+        </form>
+      </div>
+
+      <nav
+        aria-label={gettext("Segments")}
+        class="-mx-5 mt-6 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:px-0"
+      >
         <.chip
           :for={segment <- ["all" | @segments]}
           id={"segment-#{segment}"}
           patch={filter_url(@neighborhood, @filters, %{segment: segment, category: nil})}
-          active={@filters.segment == segment or (segment == "all" and @filters.segment == "all")}
+          active={@filters.segment == segment}
+          color={segment_color(segment)}
           label={Labels.segment_label(segment)}
         />
       </nav>
@@ -105,7 +146,7 @@ defmodule FreguesiaWeb.NeighborhoodLive do
       <nav
         :if={@filters.segment == "restaurants"}
         aria-label={gettext("Food type")}
-        class="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1"
+        class="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:px-0"
       >
         <.chip
           :for={category <- @categories}
@@ -127,23 +168,29 @@ defmodule FreguesiaWeb.NeighborhoodLive do
           id="filter-perk"
           patch={filter_url(@neighborhood, @filters, %{perk: !@filters.perk})}
           active={@filters.perk}
-          label={gettext("With a perk")}
-        />
-        <.chip
-          id="filter-verified"
-          patch={filter_url(@neighborhood, @filters, %{verified: !@filters.verified})}
-          active={@filters.verified}
-          label={gettext("Verified")}
+          label={gettext("With a direct perk")}
         />
       </div>
 
-      <div id="places" phx-update="stream" class="mt-6 flex flex-col gap-4 md:grid md:grid-cols-3">
+      <div class="mt-7 flex items-baseline justify-between">
+        <h2 class="text-lg font-extrabold text-ink" id="places-count">
+          {ngettext("%{count} place delivers to you", "%{count} places deliver to you", @places_count,
+            count: @places_count
+          )}
+        </h2>
+      </div>
+
+      <div
+        id="places"
+        phx-update="stream"
+        class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+      >
         <div :for={{dom_id, place} <- @streams.places} id={dom_id}>
           <FreguesiaWeb.Components.place_card place={place} />
         </div>
       </div>
 
-      <div :if={@places_count == 0 and @coming_soon?} id="coming-soon">
+      <div :if={@places_count == 0 and @coming_soon?} id="coming-soon" class="mt-4">
         <FreguesiaWeb.Components.empty_state title={gettext("Coming soon")}>
           {gettext("No places in this segment yet. Know one that should be here?")}
         </FreguesiaWeb.Components.empty_state>
@@ -155,7 +202,11 @@ defmodule FreguesiaWeb.NeighborhoodLive do
         </.link>
       </div>
 
-      <div :if={@places_count == 0 and not @coming_soon? and @filters_active?} id="nothing-found">
+      <div
+        :if={@places_count == 0 and not @coming_soon? and @filters_active?}
+        id="nothing-found"
+        class="mt-4"
+      >
         <FreguesiaWeb.Components.empty_state title={gettext("Nothing found")}>
           {gettext("Try another search or remove some filters.")}
         </FreguesiaWeb.Components.empty_state>
@@ -167,26 +218,41 @@ defmodule FreguesiaWeb.NeighborhoodLive do
         </.link>
       </div>
 
-      <section id="for-businesses" class="mt-10 rounded-card bg-sand p-5">
-        <p class="font-bold text-ink">{gettext("Do you serve this neighborhood?")}</p>
-        <p class="mt-1 text-sm text-ink-2">
-          {gettext("Get verified in a few minutes and let regulars order from you directly.")}
-        </p>
+      <section
+        id="for-businesses"
+        class="mt-10 flex flex-col gap-5 rounded-sheet bg-ink p-7 text-white md:flex-row md:items-center md:justify-between"
+      >
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wide text-gold">
+            {gettext("For businesses")}
+          </p>
+          <p class="mt-2 text-2xl font-light italic leading-tight">{gettext("Your regulars")}</p>
+          <p class="text-2xl font-extrabold leading-tight">{gettext("want to order direct.")}</p>
+          <p class="mt-2 max-w-md text-sm text-white/80">
+            {gettext("Verify your number and show up in the catalog. No commission on the order.")}
+          </p>
+        </div>
         <.link
           navigate={~p"/business/register"}
-          class="mt-3 inline-flex text-sm font-bold text-ink underline underline-offset-4"
+          class="inline-flex min-h-12 w-fit items-center rounded-full bg-white px-6 font-bold text-ink"
         >
-          {gettext("Get verified")}
+          {gettext("Register my business")}
         </.link>
       </section>
     </Layouts.app>
     """
   end
 
+  defp segment_color(segment) do
+    key = if segment == "all", do: "peach", else: segment_color_key(segment)
+    ColorMap.for_key(key)
+  end
+
   attr :id, :string, required: true
   attr :label, :string, required: true
   attr :active, :boolean, default: false
   attr :patch, :string, required: true
+  attr :color, :map, default: nil
 
   defp chip(assigns) do
     ~H"""
@@ -197,7 +263,8 @@ defmodule FreguesiaWeb.NeighborhoodLive do
       class={[
         "inline-flex min-h-11 flex-none items-center rounded-full border px-4 text-sm font-bold transition",
         @active && "border-ink bg-ink text-white",
-        !@active && "border-line bg-white text-ink-2 hover:bg-sand"
+        !@active && @color && [@color.tint, @color.accent, "border-transparent"],
+        !@active && !@color && "border-line bg-white text-ink-2 hover:bg-sand"
       ]}
     >
       {@label}
@@ -213,9 +280,16 @@ defmodule FreguesiaWeb.NeighborhoodLive do
     <input :if={@filters.category} type="hidden" name="category" value={@filters.category} />
     <input :if={@filters.open} type="hidden" name="open" value="1" />
     <input :if={@filters.perk} type="hidden" name="perk" value="1" />
-    <input :if={@filters.verified} type="hidden" name="verified" value="1" />
     """
   end
+
+  # The browser point is only used on the neighborhood it was taken in (PRD §8).
+  defp session_point(%{"neighborhood" => slug, "point" => %{"lat" => lat, "lng" => lng}}, %{
+         slug: slug
+       }),
+       do: {lat, lng}
+
+  defp session_point(_session, _neighborhood), do: nil
 
   defp parse_filters(params) do
     %{
@@ -223,7 +297,6 @@ defmodule FreguesiaWeb.NeighborhoodLive do
       category: blank_to_nil(params["category"]),
       open: params["open"] == "1",
       perk: params["perk"] == "1",
-      verified: params["verified"] == "1",
       query: blank_to_nil(params["q"])
     }
   end
@@ -239,7 +312,7 @@ defmodule FreguesiaWeb.NeighborhoodLive do
 
   defp filters_active?(filters) do
     filters.segment != "all" or filters.category != nil or filters.open or filters.perk or
-      filters.verified or filters.query != nil
+      filters.query != nil
   end
 
   # "Coming soon" when nothing in this neighborhood matches the chosen segment (or

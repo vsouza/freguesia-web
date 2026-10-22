@@ -108,7 +108,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       Fixtures.category()
       Fixtures.neighborhood()
 
-      {:ok, view, html} = live(conn, ~p"/business/register")
+      {:ok, view, html} = live(Fixtures.sign_in_business(conn), ~p"/business/register")
       assert html =~ "Passo 1 de 3"
 
       # Restaurant type shows the cuisine type field
@@ -144,7 +144,7 @@ defmodule FreguesiaWeb.ConsumerLiveTest do
       segment = Fixtures.restaurants()
       Fixtures.category()
       Fixtures.neighborhood()
-      {:ok, view, _html} = live(conn, ~p"/business/register")
+      {:ok, view, _html} = live(Fixtures.sign_in_business(conn), ~p"/business/register")
 
       # As in real use: picks the type first, so the cuisine field appears
       view

@@ -23,6 +23,17 @@ If port 5433 is taken, set `POSTGRES_PORT=<port>` (it applies to dev and test).
 3. In `/admin/verificacoes`, open a request, approve it, and check the card at `/bairro/savassi`.
 4. WhatsApp loop: open a place, click "Pedir no WhatsApp" (it opens in a new tab), then go back to the first tab. The return sheet asks whether the order worked.
 
+## Business sign-in (Firebase)
+
+Business accounts sign in with Google, Apple or e-mail and password through Firebase Authentication (PRD §6). In dev and test there is no Firebase project: the page offers a development e-mail sign-in instead, and the Google and Apple buttons stay disabled.
+
+To turn the real sign-in on, set these variables (all four, or the buttons stay disabled):
+
+- `FIREBASE_API_KEY`: the Web API key. The server also uses it to verify ID tokens (`accounts:lookup`).
+- `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID`: from the Firebase console's web app settings.
+
+Production also switches the server to the Firebase identity adapter (`config/runtime.exs`). The browser SDK is in `assets/js/firebase_sign_in.js` and is loaded only on the sign-in page.
+
 ## Checks (same as CI)
 
 ```sh
@@ -47,4 +58,6 @@ mix test --cover              # coverage threshold: 80%
 - The Fly staging app does not exist yet. `fly.toml` describes it but nothing has been deployed.
 - Rate limits (verification code per IP, backoffice login) are not implemented.
 - The neighborhood polygons in the seeds are approximate and only for development.
+- Firebase sign-in is wired but not yet run against a real Firebase project: the browser flow and the token check need a project with Google and Apple enabled.
+- The delivery-area screen has no map yet (PRD §6 asks for MapLibre); the owner sets the point with "Use my location" and edits the radius and neighborhoods in a list.
 - The six places in the seeds are placeholders.

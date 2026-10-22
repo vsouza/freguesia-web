@@ -2,8 +2,9 @@ defmodule Freguesia.Fixtures do
   @moduledoc """
   Domain test data. Each function creates what is missing and returns the record.
   """
-  alias Freguesia.{Admin, Repo}
-  alias Freguesia.Catalog.{Category, City, Neighborhood, Place, PlaceCoverage, Segment, Text}
+  alias Freguesia.{Admin, DeliveryAreas, Repo}
+  alias Freguesia.Business.Account
+  alias Freguesia.Catalog.{Category, City, Neighborhood, Place, Segment, Text}
 
   @password "senha-de-teste-123456"
 
@@ -120,16 +121,29 @@ defmodule Freguesia.Fixtures do
         paused_until: Map.get(attrs, :paused_until)
       })
 
-    Repo.insert_all(PlaceCoverage, [
-      %{
-        place_id: place.id,
-        neighborhood_id: neighborhood.id,
-        inserted_at: now(),
-        updated_at: now()
-      }
-    ])
+    # Same path as approval: the default area around the neighborhood centroid.
+    :ok = DeliveryAreas.ensure_for_place(place.id, [neighborhood.id])
 
     Repo.preload(place, [:neighborhood, :segment, :category])
+  end
+
+  @doc "A business account (PRD §6), created as Firebase would create it."
+  def business_account(attrs \\ %{}) do
+    uid = Map.get_lazy(attrs, :firebase_uid, fn -> "fb-#{System.unique_integer([:positive])}" end)
+
+    Repo.insert!(%Account{
+      firebase_uid: uid,
+      email: Map.get(attrs, :email, "dono#{System.unique_integer([:positive])}@exemplo.test"),
+      name: Map.get(attrs, :name, "Dona Teste"),
+      provider: :password,
+      last_login_at: now()
+    })
+  end
+
+  @doc "Connection signed in as a business account, the way the sign-in controller leaves it."
+  def sign_in_business(conn, account \\ nil) do
+    account = account || business_account()
+    Phoenix.ConnTest.init_test_session(conn, %{"business_account_id" => account.id})
   end
 
   @doc "Signup form params, in the shape LiveView sends (string keys)."

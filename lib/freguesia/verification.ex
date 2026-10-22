@@ -16,7 +16,8 @@ defmodule Freguesia.Verification do
   use Gettext, backend: FreguesiaWeb.Gettext
 
   alias Ecto.Changeset
-  alias Freguesia.{Admin, Messaging, Repo}
+  alias Freguesia.{Admin, Business, DeliveryAreas, Messaging, Repo}
+  alias Freguesia.Business.Membership
   alias Freguesia.Catalog.{Category, Neighborhood, Offer, Place, PlaceCoverage, Segment, Text}
   alias Freguesia.Verification.{Checks, Code, Phone, Request, Signup}
 
@@ -40,32 +41,34 @@ defmodule Freguesia.Verification do
   @doc """
   Creates or updates the place from the signup and sends the confirmation code.
 
+  The business account that signs up becomes the place's owner (PRD §6).
+
   Returns `{:ok, place, delivery}`, with `delivery` set to `:sent` or `:failed`
   (the place stays `pending` even if the send fails), or `{:error, changeset}`
   with the form errors.
   """
-  def submit_signup(attrs) do
+  def submit_signup(attrs, owner_account_id) do
     changeset = change_signup(attrs)
 
     if changeset.valid? do
-      create_signup(changeset)
+      create_signup(changeset, owner_account_id)
     else
       {:error, changeset}
     end
   end
 
-  defp create_signup(changeset) do
+  defp create_signup(changeset, owner_account_id) do
     form = Changeset.apply_changes(changeset)
 
-    case persist_signup(form) do
+    case persist_signup(form, owner_account_id) do
       {:ok, place} -> {:ok, place, deliver_code(place)}
       {:error, reason} -> {:error, add_signup_error(changeset, reason)}
     end
   end
 
-  defp persist_signup(form) do
+  defp persist_signup(form, owner_account_id) do
     with {:ok, e164} <- normalize_whatsapp(form) do
-      Repo.transact(fn -> save_signup(form, e164) end)
+      Repo.transact(fn -> save_signup(form, e164, owner_account_id) end)
     end
   end
 
@@ -374,12 +377,30 @@ defmodule Freguesia.Verification do
     end
   end
 
-  defp save_signup(form, e164) do
+  defp save_signup(form, e164, owner_account_id) do
     with {:ok, place} <- upsert_place(form, e164),
+         :ok <- check_owner(place, owner_account_id),
          :ok <- put_coverage(place, form.coverage_ids),
          :ok <- put_offer(place, form.offer_text) do
+      Business.add_owner(owner_account_id, place.id)
       {:ok, place}
     end
+  end
+
+  # A number already registered by another account cannot be taken over by a new one.
+  defp check_owner(%Place{id: place_id}, owner_account_id) do
+    owners =
+      Repo.all(
+        from m in Membership,
+          where: m.place_id == ^place_id,
+          select: m.business_account_id
+      )
+
+    if owners == [] or owner_account_id in owners,
+      do: :ok,
+      else:
+        {:error,
+         {:whatsapp, dgettext("errors", "this number is already registered by another account")}}
   end
 
   # A phone number has only one active place. Reuses the record if it has not been
@@ -617,6 +638,7 @@ defmodule Freguesia.Verification do
            |> Place.status_changeset(:verified, %{verified_at: now()})
            |> Repo.update(),
          :ok <- publish_offer(place),
+         :ok <- publish_coverage(place),
          {:ok, _} <-
            Admin.record_audit(
              operator,
@@ -637,6 +659,14 @@ defmodule Freguesia.Verification do
            }) do
       {:ok, request}
     end
+  end
+
+  # On first approval the area is created from the neighborhoods picked at signup (PRD §6).
+  defp publish_coverage(place) do
+    served =
+      Repo.all(from c in PlaceCoverage, where: c.place_id == ^place.id, select: c.neighborhood_id)
+
+    DeliveryAreas.ensure_for_place(place.id, served)
   end
 
   # The newest pending offer becomes active; the previously active one becomes `replaced`.

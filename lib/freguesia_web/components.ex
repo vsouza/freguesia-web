@@ -4,6 +4,7 @@ defmodule FreguesiaWeb.Components do
   which are the Phoenix basics (forms, buttons, tables).
   """
   use Phoenix.Component
+  use Gettext, backend: FreguesiaWeb.Gettext
   use FreguesiaWeb, :verified_routes
   use Gettext, backend: FreguesiaWeb.Gettext
 
@@ -12,31 +13,37 @@ defmodule FreguesiaWeb.Components do
   alias Freguesia.Catalog.ColorMap
   alias Freguesia.Reports.{Savings, Stats}
 
-  @doc """
-  Card for a place in the neighborhood list.
-
-  Three states (PRD §5):
-    * verified: category background, badge, offer tag if any
-    * unverified: `sand` background, no offer, no savings
-    * closed: the status "Fechado · abre às…" shows in place of "Aberto"
-  """
   attr :place, :any, required: true
   attr :class, :any, default: nil
 
+  @doc """
+  Card of a place, following the design mock (PRD §5 and §12a).
+
+  Four states, decided by the place data:
+    * verified with an offer and savings: photo, badge, savings chip and tilted offer tag
+    * verified with fewer than 10 reports: neutral "Few reports" chip, no average
+    * unverified: neutral background, no photo, no offer, Pix warning and outline button
+    * closed: grey dot and the opening time; everything else stays the same
+  """
   def place_card(assigns) do
     place = assigns.place
     verified? = place.status == :verified
     colors = if verified?, do: category_colors(place), else: ColorMap.neutral()
     # Rule 4 (PRD §4): the card only shows the offer summary; without one, nothing is shown.
     offer = if verified?, do: Freguesia.Catalog.active_offer(place)
+    [first | rest] = name_parts(place.name)
 
     assigns =
       assign(assigns,
         verified?: verified?,
         colors: colors,
         offer: offer,
+        name_first: first,
+        name_rest: List.first(rest),
+        open?: match?({:open, _}, place.hours_status),
         funcionou_text: funcionou_chip(place),
-        economia_text: savings_chip(place)
+        savings: savings_info(place),
+        category: category_label(place)
       )
 
     ~H"""
@@ -44,39 +51,130 @@ defmodule FreguesiaWeb.Components do
       navigate={~p"/places/#{@place.slug}"}
       id={"place-card-#{@place.slug}"}
       class={[
-        "group relative flex flex-col gap-3 rounded-card p-5 shadow-card transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-ink",
+        "group relative flex gap-4 overflow-hidden rounded-card p-5 shadow-card transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-ink",
         @colors.tint,
         @class
       ]}
     >
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <p class={["text-xs font-bold uppercase tracking-wide", @colors.accent]}>
-            {category_label(@place)}
-          </p>
-          <h3 class="mt-0.5 truncate text-lg font-extrabold leading-tight text-ink">
-            {@place.name}
-          </h3>
+      <.offer_tag :if={@offer && @offer.tag} text={@offer.tag} class="absolute right-4 top-4" />
+
+      <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+        <div class="pr-20 leading-none">
+          <p :if={@name_rest} class="text-xl font-light italic text-ink-2">{@name_first}</p>
+          <h3 class="text-xl font-extrabold text-ink">{@name_rest || @name_first}</h3>
         </div>
-        <.verified_badge :if={@verified?} />
+
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class={[
+            "rounded-full bg-white px-2.5 py-1 font-bold uppercase tracking-wide",
+            @colors.accent
+          ]}>
+            {@category}
+          </span>
+          <span class="text-muted">{@place.neighborhood.name}</span>
+        </div>
+
+        <p class="flex items-center gap-2 text-sm text-ink-2">
+          <span
+            class={["size-2 flex-none rounded-full", @open? && "bg-tomato-500", !@open? && "bg-muted"]}
+            aria-hidden="true"
+          >
+          </span>
+          <FreguesiaWeb.Components.hours_label status={@place.hours_status} />
+        </p>
+
+        <div class="flex flex-wrap gap-2">
+          <.verified_badge :if={@verified?} />
+          <.unverified_chip :if={!@verified?} />
+          <.savings_chip
+            :if={@verified? and @savings.reliable?}
+            percent={@savings.percent}
+            count={@savings.count}
+          />
+          <.proof_chip
+            :if={@verified? and !@savings.reliable?}
+            text={gettext("Few reports (%{count})", count: @savings.count)}
+          />
+          <.proof_chip :if={@funcionou_text} text={@funcionou_text} />
+        </div>
+
+        <.not_verified_note :if={!@verified?} />
+
+        <span
+          :if={@verified?}
+          class="mt-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-ink px-5 text-sm font-bold text-white"
+        >
+          {gettext("See and order")} <.icon name="hero-arrow-up-right-mini" class="size-4" />
+        </span>
+        <span
+          :if={!@verified?}
+          class="mt-1 inline-flex min-h-11 w-fit items-center rounded-full border border-ink px-5 text-sm font-bold text-ink"
+        >
+          {gettext("Open chat")}
+        </span>
       </div>
 
-      <p class="text-sm text-ink-2">
-        <.hours_label status={@place.hours_status} />
-        <span class="text-muted">· {@place.neighborhood.name}</span>
-      </p>
-
-      <.not_verified_note :if={!@verified?} />
-
-      <div :if={@verified? and is_list(@place.stats)} class="flex flex-wrap gap-2">
-        <.proof_chip :if={@funcionou_text} text={@funcionou_text} />
-        <.proof_chip :if={@economia_text} text={@economia_text} />
+      <div class="relative aspect-square w-[116px] flex-none self-center overflow-hidden rounded-card md:w-[132px]">
+        <img
+          :if={@verified? and @place.photo_key}
+          src={~p"/photos/#{@place.photo_key}"}
+          alt=""
+          loading="lazy"
+          class="size-full object-cover"
+        />
+        <div
+          :if={!(@verified? and @place.photo_key)}
+          class="flex size-full flex-col items-center justify-center gap-1 bg-white/60 p-2 text-center text-[11px] text-muted"
+        >
+          <.icon name="hero-photo" class="size-6" />
+          <span>
+            {if @verified?, do: gettext("No photo yet"), else: gettext("No photo until verified")}
+          </span>
+        </div>
       </div>
-
-      <.offer_tag :if={@offer && @offer.tag} text={@offer.tag} />
     </.link>
     """
   end
+
+  defp name_parts(name) do
+    case String.split(name, " ", parts: 2) do
+      [single] -> [single]
+      [first, rest] -> [first, rest]
+    end
+  end
+
+  defp unverified_chip(assigns) do
+    ~H"""
+    <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-cat-grape-accent">
+      {gettext("Not verified")}
+    </span>
+    """
+  end
+
+  attr :percent, :any, required: true
+  attr :count, :integer, required: true
+
+  defp savings_chip(assigns) do
+    ~H"""
+    <span class="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs font-bold text-white">
+      <span class="text-gold">{round_percent(@percent)}%</span>
+      {gettext("less · %{count} reports", count: @count)}
+    </span>
+    """
+  end
+
+  # Without loaded stats (previews, pages that do not preload them) there is nothing to prove.
+  defp savings_info(%{stats: stats} = place) when is_list(stats) do
+    stat = Stats.window(place, "90d")
+    count = stat.savings_hist |> Map.values() |> Enum.sum()
+
+    %{reliable?: count >= 10, count: count, percent: stat.savings_avg, loaded?: true}
+  end
+
+  defp savings_info(_place), do: %{reliable?: false, count: 0, percent: nil, loaded?: false}
+
+  defp round_percent(nil), do: 0
+  defp round_percent(avg), do: avg |> Decimal.round(0) |> Decimal.to_integer()
 
   @doc """
   Proof that ordering directly works: "Funcionou 31/33". Only shows with at least
@@ -103,10 +201,14 @@ defmodule FreguesiaWeb.Components do
   Slanted tag with the offer summary (rule 4: only the summary on the card).
   """
   attr :text, :string, required: true
+  attr :class, :any, default: nil
 
   def offer_tag(assigns) do
     ~H"""
-    <span class="inline-flex w-fit -rotate-2 items-center gap-1.5 rounded-tile bg-ink px-3 py-1.5 text-sm font-bold text-white shadow-tag">
+    <span class={[
+      "inline-flex w-fit -rotate-2 items-center gap-1.5 rounded-tile bg-ink px-3 py-1.5 text-sm font-bold text-white shadow-tag",
+      @class
+    ]}>
       <.icon name="hero-tag-mini" class="size-4 text-gold" />
       {@text}
     </span>
@@ -320,17 +422,6 @@ defmodule FreguesiaWeb.Components do
           gettext("Worked %{worked}/%{responses}", worked: stat.worked, responses: stat.responses)
     end
   end
-
-  defp savings_chip(place) do
-    if is_list(place.stats) do
-      stat = Stats.window(place, "90d")
-      n = stat.savings_hist |> Map.values() |> Enum.sum()
-      if n >= 10, do: gettext("Average savings %{percent}%", percent: round_avg(stat.savings_avg))
-    end
-  end
-
-  defp round_avg(nil), do: 0
-  defp round_avg(avg), do: avg |> Decimal.round(0) |> Decimal.to_integer()
 
   defp percent(_part, 0), do: 0
   defp percent(part, total), do: round(part * 100 / total)

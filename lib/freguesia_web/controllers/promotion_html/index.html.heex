@@ -1,0 +1,33 @@
+<Layouts.app flash={@flash} active_tab={:promotions} current_neighborhood={@current_neighborhood}>
+  <FreguesiaWeb.Components.two_line_title
+    first={gettext("Promotions")}
+    second={gettext("from the places")}
+  />
+
+  <ul :if={@promotions != []} id="promotions" class="mt-6 flex flex-col gap-4">
+    <li :for={promotion <- @promotions} id={"promotion-#{promotion.id}"}>
+      <article class="flex flex-col gap-2 rounded-card bg-white p-5 shadow-card">
+        <p class="text-xs font-bold uppercase tracking-wide text-muted">
+          {promotion.place.name}
+        </p>
+        <h2 class="text-lg font-extrabold text-ink">{promotion.title}</h2>
+        <p :if={promotion.body} class="text-sm text-ink-2">{promotion.body}</p>
+        <p :if={promotion.ends_at} class="text-xs text-muted">
+          {gettext("Until %{date}", date: Calendar.strftime(promotion.ends_at, "%d/%m"))}
+        </p>
+        <.link
+          navigate={~p"/places/#{promotion.place.slug}"}
+          class="mt-1 inline-flex w-fit items-center rounded-full bg-ink px-4 py-2 text-sm font-bold text-white"
+        >
+          {gettext("See the place")}
+        </.link>
+      </article>
+    </li>
+  </ul>
+
+  <div :if={@promotions == []} id="no-promotions" class="mt-6">
+    <FreguesiaWeb.Components.empty_state title={gettext("No promotions right now")}>
+      {gettext("When a place publishes a perk for direct orders, it shows up here.")}
+    </FreguesiaWeb.Components.empty_state>
+  </div>
+</Layouts.app>

@@ -8,11 +8,14 @@ defmodule FreguesiaWeb.Router do
   @content_security_policy Enum.join(
                              [
                                "default-src 'self'",
-                               "script-src 'self'",
+                               # Firebase Auth (business sign-in, PRD §6) loads its popup
+                               # helper from apis.google.com and talks to its auth domains.
+                               "script-src 'self' https://apis.google.com",
                                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                                "font-src 'self' https://fonts.gstatic.com",
                                "img-src 'self' data:",
-                               "connect-src 'self' ws: wss:",
+                               "connect-src 'self' ws: wss: https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com",
+                               "frame-src 'self' https://*.firebaseapp.com https://apis.google.com https://accounts.google.com",
                                "frame-ancestors 'none'",
                                "base-uri 'self'",
                                "form-action 'self'"
@@ -57,14 +60,35 @@ defmodule FreguesiaWeb.Router do
     get "/terms", LegalController, :terms
     get "/privacy", LegalController, :privacy
     get "/how-we-calculate", LegalController, :how_we_calculate
+    get "/how-it-works", PageController, :how_it_works
+    get "/profile", PageController, :profile
+    get "/promotions", PromotionController, :index
     get "/location/:neighborhood", LocationController, :set
+    post "/location/geo", LocationController, :geo
     get "/places/:slug/whatsapp", WhatsAppController, :open
 
     live_session :catalog, on_mount: [FreguesiaWeb.Locale] do
       live "/location", LocationLive
       live "/areas/:neighborhood", NeighborhoodLive
       live "/search", SearchLive
+      live "/favorites", FavoritesLive
+      live "/business/sign-in", BusinessSignInLive
+    end
+
+    post "/business/session", BusinessSessionController, :create
+    delete "/business/session", BusinessSessionController, :delete
+  end
+
+  # Business area: a signed-in account is required (PRD §6).
+  scope "/", FreguesiaWeb do
+    pipe_through :browser
+
+    live_session :business,
+      on_mount: [FreguesiaWeb.Locale, {FreguesiaWeb.BusinessAuth, :require}] do
       live "/business/register", SignupLive
+      live "/business/account", BusinessAccountLive
+      live "/business/places/:id/delivery-area", DeliveryAreaLive
+      live "/business/places/:id/ad", AdRequestLive
     end
   end
 
@@ -100,6 +124,7 @@ defmodule FreguesiaWeb.Router do
       live "/places", PlacesLive
       live "/places/:id", PlaceLive
       live "/complaints", ComplaintsLive
+      live "/ads", AdsLive
       # Fake inbox: where the verification code shows up in dev and staging.
       # Behind login, because in staging it shows real test codes.
       live "/fake-inbox", FakeInboxLive

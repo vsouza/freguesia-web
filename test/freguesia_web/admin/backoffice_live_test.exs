@@ -4,7 +4,7 @@ defmodule FreguesiaWeb.Admin.BackofficeLiveTest do
   import Ecto.Query, warn: false
   import Phoenix.LiveViewTest
 
-  alias Freguesia.{Admin, Backoffice, Fixtures, Repo}
+  alias Freguesia.{Admin, Fixtures, Repo}
   alias Freguesia.Reports.{Complaint, Report}
 
   # Logs an operator in through the real sign-in and 2FA routes.

@@ -1,0 +1,8 @@
+{
+  "name": "freguesia-assets",
+  "private": true,
+  "description": "Browser dependencies bundled by esbuild into priv/static/assets/js (PRD §6: Firebase Authentication for business accounts).",
+  "dependencies": {
+    "firebase": "^12.0.0"
+  }
+}

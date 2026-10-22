@@ -39,7 +39,7 @@ defmodule FreguesiaWeb.SignupLive do
   end
 
   def handle_event("save", %{"signup" => params}, socket) do
-    case Verification.submit_signup(params) do
+    case Verification.submit_signup(params, socket.assigns.current_business_account.id) do
       {:ok, place, delivery} ->
         {:noreply,
          socket

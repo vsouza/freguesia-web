@@ -7,7 +7,6 @@ defmodule FreguesiaWeb.Onda2Test do
 
   alias Freguesia.{Catalog, Fixtures, Repo}
   alias Freguesia.Catalog.{Offer, Place}
-  alias Freguesia.Verification.Request
 
   # A point inside the test polygon of Savassi (see Fixtures.reference_data!/0).
   @inside_savassi {-19.9372, -43.9378}
@@ -41,8 +40,43 @@ defmodule FreguesiaWeb.Onda2Test do
       {:ok, view, _html} = live(conn, ~p"/location")
       {lat, lng} = @inside_savassi
 
-      assert {:error, {:redirect, %{to: "/location/savassi?via=geo"}}} =
-               render_hook(view, "located", %{"lat" => lat, "lng" => lng})
+      render_hook(view, "located", %{"lat" => lat, "lng" => lng})
+
+      # The coordinates go to the session through this form, never through the URL.
+      assert has_element?(view, ~s(#geo-form[action="/location/geo"][phx-trigger-action]))
+      assert has_element?(view, ~s(#geo-form input[name="geo[neighborhood]"][value="savassi"]))
+    end
+
+    test "the browser point is kept in the session, rounded to 3 decimals", %{conn: conn} do
+      conn =
+        post(conn, ~p"/location/geo", %{
+          "geo" => %{"neighborhood" => "savassi", "lat" => "-19.93721", "lng" => "-43.93781"}
+        })
+
+      assert redirected_to(conn) == "/areas/savassi"
+      assert get_session(conn, "point") == %{"lat" => -19.937, "lng" => -43.938}
+    end
+
+    test "the home lists the places that cover the stored point", %{conn: conn} do
+      place = Fixtures.verified_place(%{name: "Perto do Ponto"})
+
+      conn =
+        post(conn, ~p"/location/geo", %{
+          "geo" => %{"neighborhood" => "savassi", "lat" => "-20.5", "lng" => "-44.5"}
+        })
+
+      {:ok, far_view, _html} = live(recycle(conn), ~p"/areas/savassi")
+      refute has_element?(far_view, "#place-card-#{place.slug}")
+
+      {lat, lng} = @inside_savassi
+
+      conn =
+        post(build_conn(), ~p"/location/geo", %{
+          "geo" => %{"neighborhood" => "savassi", "lat" => "#{lat}", "lng" => "#{lng}"}
+        })
+
+      {:ok, near_view, _html} = live(recycle(conn), ~p"/areas/savassi")
+      assert has_element?(near_view, "#place-card-#{place.slug}")
     end
 
     test "a point outside the pilot asks for a manual choice", %{conn: conn} do

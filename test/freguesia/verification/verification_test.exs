@@ -10,9 +10,10 @@ defmodule Freguesia.VerificationTest do
   alias Freguesia.Verification.{Code, Request}
 
   # Signs up a place and returns {place, e164}. The code stays in the Fake.
-  defp signup!(overrides \\ %{}) do
+  defp signup!(overrides \\ %{}, owner \\ nil) do
     params = Fixtures.signup_params(overrides)
-    {:ok, place, :sent} = Verification.submit_signup(params)
+    owner = owner || Fixtures.business_account()
+    {:ok, place, :sent} = Verification.submit_signup(params, owner.id)
     place
   end
 
@@ -27,7 +28,7 @@ defmodule Freguesia.VerificationTest do
 
   defp templates_sent(e164), do: e164 |> Fake.sent_to() |> Enum.map(& &1.template)
 
-  describe "submit_signup/1" do
+  describe "submit_signup/2" do
     test "creates the place as pending and sends the code over WhatsApp" do
       place = signup!(%{"offer_text" => "10% no pedido direto"})
 
@@ -51,7 +52,9 @@ defmodule Freguesia.VerificationTest do
     test "restaurant requires a cuisine type" do
       params = Fixtures.signup_params(%{"category_id" => nil})
 
-      assert {:error, changeset} = Verification.submit_signup(params)
+      assert {:error, changeset} =
+               Verification.submit_signup(params, Fixtures.business_account().id)
+
       assert {"escolha o tipo de comida", _} = changeset.errors[:category_id]
     end
 
@@ -61,13 +64,18 @@ defmodule Freguesia.VerificationTest do
       params =
         Fixtures.signup_params(%{"neighborhood_id" => outside.id, "coverage_ids" => [outside.id]})
 
-      assert {:error, changeset} = Verification.submit_signup(params)
+      assert {:error, changeset} =
+               Verification.submit_signup(params, Fixtures.business_account().id)
+
       assert changeset.errors[:neighborhood_id]
     end
 
     test "requires acceptance of the terms" do
       assert {:error, changeset} =
-               Verification.submit_signup(Fixtures.signup_params(%{"accept_terms" => "false"}))
+               Verification.submit_signup(
+                 Fixtures.signup_params(%{"accept_terms" => "false"}),
+                 Fixtures.business_account().id
+               )
 
       assert changeset.errors[:accept_terms]
     end
@@ -77,16 +85,35 @@ defmodule Freguesia.VerificationTest do
       assert verified.status == :verified
 
       params = Fixtures.signup_params(%{"whatsapp" => "+5531988887777"})
-      assert {:error, changeset} = Verification.submit_signup(params)
+
+      assert {:error, changeset} =
+               Verification.submit_signup(params, Fixtures.business_account().id)
+
       assert changeset.errors[:whatsapp]
     end
 
     test "a number with a pending signup is reused, not duplicated" do
-      first = signup!(%{"name" => "Primeiro Nome"})
-      second = signup!(%{"name" => "Nome Corrigido", "whatsapp" => first.whatsapp_e164})
+      owner = Fixtures.business_account()
+      first = signup!(%{"name" => "Primeiro Nome"}, owner)
+      second = signup!(%{"name" => "Nome Corrigido", "whatsapp" => first.whatsapp_e164}, owner)
 
       assert first.id == second.id
       assert Repo.get!(Place, first.id).name == "Nome Corrigido"
+    end
+
+    test "a number registered by another account cannot be taken over" do
+      first = signup!(%{"name" => "Primeiro Nome"})
+
+      assert {:error, changeset} =
+               Verification.submit_signup(
+                 Fixtures.signup_params(%{
+                   "name" => "Outra Conta",
+                   "whatsapp" => first.whatsapp_e164
+                 }),
+                 Fixtures.business_account().id
+               )
+
+      assert changeset.errors[:whatsapp]
     end
   end
 
@@ -285,7 +312,10 @@ defmodule Freguesia.VerificationTest do
       {:ok, _} = Verification.reject(request, nil, "Número errado")
 
       params = Fixtures.signup_params(%{"whatsapp" => place.whatsapp_e164})
-      assert {:error, changeset} = Verification.submit_signup(params)
+
+      assert {:error, changeset} =
+               Verification.submit_signup(params, Fixtures.business_account().id)
+
       assert {msg, _} = changeset.errors[:whatsapp]
       assert msg =~ "só pode tentar de novo a partir de"
     end

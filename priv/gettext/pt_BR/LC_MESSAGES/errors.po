@@ -106,7 +106,7 @@ msgstr "deve ser igual a %{number}"
 msgid "accept the terms to continue"
 msgstr "aceite os termos para continuar"
 
-#: lib/freguesia/verification.ex:319
+#: lib/freguesia/verification.ex:322
 #, elixir-autogen, elixir-format
 msgid "choose the type of food"
 msgstr "escolha o tipo de comida"
@@ -116,12 +116,12 @@ msgstr "escolha o tipo de comida"
 msgid "invalid email"
 msgstr "e-mail inválido"
 
-#: lib/freguesia/verification.ex:309
+#: lib/freguesia/verification.ex:312
 #, elixir-autogen, elixir-format
 msgid "invalid type"
 msgstr "tipo inválido"
 
-#: lib/freguesia/verification.ex:323
+#: lib/freguesia/verification.ex:326
 #, elixir-autogen, elixir-format
 msgid "invalid type of food"
 msgstr "tipo de comida inválido"
@@ -131,22 +131,22 @@ msgstr "tipo de comida inválido"
 msgid "is required"
 msgstr "obrigatório"
 
-#: lib/freguesia/verification.ex:358
+#: lib/freguesia/verification.ex:361
 #, elixir-autogen, elixir-format
 msgid "neighborhood outside the pilot"
 msgstr "bairro fora do piloto"
 
-#: lib/freguesia/verification.ex:345
+#: lib/freguesia/verification.ex:348
 #, elixir-autogen, elixir-format
 msgid "outside the pilot for now"
 msgstr "fora do piloto por enquanto"
 
-#: lib/freguesia/verification.ex:410
+#: lib/freguesia/verification.ex:431
 #, elixir-autogen, elixir-format
 msgid "this number can only try again from %{date}"
 msgstr "este número só pode tentar de novo a partir de %{date}"
 
-#: lib/freguesia/verification.ex:395
+#: lib/freguesia/verification.ex:416
 #, elixir-autogen, elixir-format
 msgid "this number is already in the catalog"
 msgstr "este número já está no catálogo"
@@ -162,7 +162,7 @@ msgid "up to 80 characters"
 msgstr "até 80 caracteres"
 
 #: lib/freguesia/catalog/place.ex:58
-#: lib/freguesia/verification.ex:373
+#: lib/freguesia/verification.ex:376
 #: lib/freguesia/verification/signup.ex:64
 #, elixir-autogen, elixir-format
 msgid "use a Brazilian WhatsApp number with area code"
@@ -177,3 +177,8 @@ msgstr "use entre 12 e 72 caracteres"
 #, elixir-autogen, elixir-format
 msgid "use between 3 and 60 characters"
 msgstr "use entre 3 e 60 caracteres"
+
+#: lib/freguesia/verification.ex:403
+#, elixir-autogen, elixir-format
+msgid "this number is already registered by another account"
+msgstr "este número já está cadastrado por outra conta"
