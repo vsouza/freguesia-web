@@ -1,13 +1,13 @@
 defmodule FreguesiaWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :freguesia
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
+  # The session lives in the cookie and is encrypted, so the customer's rounded location
+  # point (PRD §13) is readable by the server only. Changing the salts signs out everyone.
   @session_options [
     store: :cookie,
     key: "_freguesia_key",
     signing_salt: "BjSUxW1C",
+    encryption_salt: "k7Qd2pLs",
     same_site: "Lax"
   ]
 

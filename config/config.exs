@@ -91,6 +91,10 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Keep the browser point (PRD §11, §13) and the Firebase ID token out of request and
+# LiveView logs. Keys match by substring, so "lat" also hides any key containing it.
+config :phoenix, :filter_parameters, ["password", "id_token", "lat", "lng"]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
