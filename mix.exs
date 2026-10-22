@@ -14,7 +14,8 @@ defmodule Freguesia.MixProject do
       listeners: [Phoenix.CodeReloader],
       # PRD §14: minimum 80% coverage in the contexts
       test_coverage: [summary: [threshold: 80]],
-      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs"]
+      # CI runs Dialyzer with MIX_ENV=test, which compiles test/support, so ExUnit must be in the PLT
+      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs", plt_add_apps: [:ex_unit]]
     ]
   end
 
