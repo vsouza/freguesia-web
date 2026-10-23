@@ -16,7 +16,7 @@ defmodule Freguesia.Verification do
   use Gettext, backend: FreguesiaWeb.Gettext
 
   alias Ecto.Changeset
-  alias Freguesia.{Admin, Business, DeliveryAreas, Messaging, Repo}
+  alias Freguesia.{Admin, Business, DeliveryAreas, Messaging, RateLimit, Repo}
   alias Freguesia.Business.Membership
   alias Freguesia.Catalog.{Category, Neighborhood, Offer, Place, PlaceCoverage, Segment, Text}
   alias Freguesia.Verification.{Checks, Code, Phone, Request, Signup}
@@ -43,17 +43,20 @@ defmodule Freguesia.Verification do
 
   The business account that signs up becomes the place's owner (PRD §6).
 
+  `client_keys` identify who is asking (device, IP) for the code rate limit
+  (`Freguesia.RateLimit`); `[]` means no limit.
+
   Returns `{:ok, place, delivery}`, with `delivery` set to `:sent` or `:failed`
-  (the place stays `pending` even if the send fails), or `{:error, changeset}`
-  with the form errors.
+  (the place stays `pending` even if the send fails), `{:error, changeset}`
+  with the form errors, or `{:error, :rate_limited}` before anything is saved.
   """
-  def submit_signup(attrs, owner_account_id) do
+  def submit_signup(attrs, owner_account_id, client_keys) do
     changeset = change_signup(attrs)
 
-    if changeset.valid? do
-      create_signup(changeset, owner_account_id)
-    else
-      {:error, changeset}
+    cond do
+      not changeset.valid? -> {:error, changeset}
+      RateLimit.check(:verification_code, client_keys) != :ok -> {:error, :rate_limited}
+      true -> create_signup(changeset, owner_account_id)
     end
   end
 
@@ -80,15 +83,18 @@ defmodule Freguesia.Verification do
     end
   end
 
-  @doc "Resends the code. Only after 60 seconds since the last send."
-  def resend_code(place_id) do
+  @doc """
+  Resends the code. Only after 60 seconds since the last send, and within the
+  `client_keys` rate limit (see `submit_signup/3`).
+  """
+  def resend_code(place_id, client_keys) do
     place = Repo.get!(Place, place_id)
     last = last_code(place.id)
 
-    if last && seconds_since(last.inserted_at) < @resend_after_seconds do
-      {:error, :too_soon}
-    else
-      issue_code(place)
+    cond do
+      last && seconds_since(last.inserted_at) < @resend_after_seconds -> {:error, :too_soon}
+      RateLimit.check(:verification_code, client_keys) != :ok -> {:error, :rate_limited}
+      true -> issue_code(place)
     end
   end
 

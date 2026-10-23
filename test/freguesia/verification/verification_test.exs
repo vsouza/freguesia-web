@@ -13,7 +13,7 @@ defmodule Freguesia.VerificationTest do
   defp signup!(overrides \\ %{}, owner \\ nil) do
     params = Fixtures.signup_params(overrides)
     owner = owner || Fixtures.business_account()
-    {:ok, place, :sent} = Verification.submit_signup(params, owner.id)
+    {:ok, place, :sent} = Verification.submit_signup(params, owner.id, [])
     place
   end
 
@@ -53,7 +53,7 @@ defmodule Freguesia.VerificationTest do
       params = Fixtures.signup_params(%{"category_id" => nil})
 
       assert {:error, changeset} =
-               Verification.submit_signup(params, Fixtures.business_account().id)
+               Verification.submit_signup(params, Fixtures.business_account().id, [])
 
       assert {"escolha o tipo de comida", _} = changeset.errors[:category_id]
     end
@@ -65,7 +65,7 @@ defmodule Freguesia.VerificationTest do
         Fixtures.signup_params(%{"neighborhood_id" => outside.id, "coverage_ids" => [outside.id]})
 
       assert {:error, changeset} =
-               Verification.submit_signup(params, Fixtures.business_account().id)
+               Verification.submit_signup(params, Fixtures.business_account().id, [])
 
       assert changeset.errors[:neighborhood_id]
     end
@@ -74,7 +74,8 @@ defmodule Freguesia.VerificationTest do
       assert {:error, changeset} =
                Verification.submit_signup(
                  Fixtures.signup_params(%{"accept_terms" => "false"}),
-                 Fixtures.business_account().id
+                 Fixtures.business_account().id,
+                 []
                )
 
       assert changeset.errors[:accept_terms]
@@ -87,7 +88,7 @@ defmodule Freguesia.VerificationTest do
       params = Fixtures.signup_params(%{"whatsapp" => "+5531988887777"})
 
       assert {:error, changeset} =
-               Verification.submit_signup(params, Fixtures.business_account().id)
+               Verification.submit_signup(params, Fixtures.business_account().id, [])
 
       assert changeset.errors[:whatsapp]
     end
@@ -110,7 +111,8 @@ defmodule Freguesia.VerificationTest do
                    "name" => "Outra Conta",
                    "whatsapp" => first.whatsapp_e164
                  }),
-                 Fixtures.business_account().id
+                 Fixtures.business_account().id,
+                 []
                )
 
       assert changeset.errors[:whatsapp]
@@ -156,7 +158,7 @@ defmodule Freguesia.VerificationTest do
 
     test "resend only after 60 seconds" do
       place = signup!()
-      assert {:error, :too_soon} = Verification.resend_code(place.id)
+      assert {:error, :too_soon} = Verification.resend_code(place.id, [])
     end
 
     test "resend after 60 seconds generates a new code" do
@@ -167,7 +169,7 @@ defmodule Freguesia.VerificationTest do
         set: [inserted_at: DateTime.add(DateTime.utc_now(), -61) |> DateTime.truncate(:second)]
       )
 
-      assert {:ok, _code} = Verification.resend_code(place.id)
+      assert {:ok, _code} = Verification.resend_code(place.id, [])
       assert length(Fake.sent_to(place.whatsapp_e164)) == 2
     end
   end
@@ -314,7 +316,7 @@ defmodule Freguesia.VerificationTest do
       params = Fixtures.signup_params(%{"whatsapp" => place.whatsapp_e164})
 
       assert {:error, changeset} =
-               Verification.submit_signup(params, Fixtures.business_account().id)
+               Verification.submit_signup(params, Fixtures.business_account().id, [])
 
       assert {msg, _} = changeset.errors[:whatsapp]
       assert msg =~ "só pode tentar de novo a partir de"

@@ -41,6 +41,9 @@ config :freguesia, FreguesiaWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
+  # Fly's proxy puts the client's IP in this header, read by FreguesiaWeb.DeviceSession.
+  config :freguesia, :client_ip_header, "fly-client-ip"
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

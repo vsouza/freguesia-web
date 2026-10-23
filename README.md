@@ -56,7 +56,7 @@ mix test --cover              # coverage threshold: 80%
 
 - The real WhatsApp adapter (`Messaging.Cloud`) and the Meta templates are not done yet. Staging uses the fake adapter.
 - The Fly staging app does not exist yet. `fly.toml` describes it but nothing has been deployed.
-- Rate limits (verification code per IP, backoffice login) are not implemented.
+- The search rate limit (PRD §13: 60/min) is not implemented, and reports are limited per device only (`Reports.Antifraud`). The verification code and backoffice login limits are in `Freguesia.RateLimit`. Their counters live in the machine's memory: every deploy resets them, and while a deploy runs two machines a client can get up to twice the limit.
 - The neighborhood polygons in the seeds are approximate and only for development.
 - Firebase sign-in is wired but not yet run against a real Firebase project: the browser flow and the token check need a project with Google and Apple enabled.
 - The delivery-area screen has no map yet (PRD §6 asks for MapLibre); the owner sets the point with "Use my location" and edits the radius and neighborhoods in a list.
